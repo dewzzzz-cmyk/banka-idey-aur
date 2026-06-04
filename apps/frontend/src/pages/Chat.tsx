@@ -54,7 +54,7 @@ export default function Chat() {
     let newSessionId = sessionId
 
     try {
-      const resp = await fetch('/api/ai/stream', {
+      const resp = await fetch((import.meta.env.VITE_API_URL ?? '') + '/api/ai/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

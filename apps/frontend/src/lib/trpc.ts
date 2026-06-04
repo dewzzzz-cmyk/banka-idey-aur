@@ -8,7 +8,7 @@ export function createTRPCClient() {
   return trpc.createClient({
     links: [
       httpBatchLink({
-        url: '/api/trpc',
+        url: (import.meta.env.VITE_API_URL ?? '') + '/api/trpc',
         fetch(url, options) {
           return fetch(url, { ...options, credentials: 'include' })
         },

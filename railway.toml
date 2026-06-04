@@ -1,0 +1,5 @@
+# Railway monorepo config
+# Each service is configured separately in its own directory
+
+[build]
+# Railway auto-detects services from subdirectories
