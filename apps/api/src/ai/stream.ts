@@ -5,11 +5,24 @@ import { prisma } from '../db.js'
 import { getActivePrompt, buildMessages } from './prompt.js'
 import type { AiCollectedFields, AiMessage } from '@portal/types'
 
-function getOllamaClient() {
+function getAIClient() {
+  if (process.env.DEEPSEEK_API_KEY) {
+    return createOpenAI({
+      baseURL: 'https://api.deepseek.com/v1',
+      apiKey: process.env.DEEPSEEK_API_KEY,
+    })
+  }
   return createOpenAI({
     baseURL: `${process.env.OLLAMA_BASE_URL ?? 'http://ollama:11434'}/v1`,
     apiKey: 'ollama',
   })
+}
+
+function getModelName() {
+  if (process.env.DEEPSEEK_API_KEY) {
+    return process.env.DEEPSEEK_MODEL ?? 'deepseek-chat'
+  }
+  return process.env.OLLAMA_MODEL ?? 'qwen2.5:7b'
 }
 
 export async function streamChatHandler(
@@ -58,9 +71,11 @@ export async function streamChatHandler(
   let fullResponse = ''
 
   try {
-    const ollama = getOllamaClient()
+    const provider = process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'ollama'
+    console.log(`[AI stream] provider=${provider}`)
+    const aiClient = getAIClient()
     const result = await streamText({
-      model: ollama(process.env.OLLAMA_MODEL ?? 'qwen2.5:7b'),
+      model: aiClient(getModelName()),
       messages: chatMessages,
       temperature: 0.7,
       maxTokens: 1024,

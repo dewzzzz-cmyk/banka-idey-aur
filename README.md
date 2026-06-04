@@ -33,6 +33,26 @@ open http://localhost
 
 Все сервисы готовы когда `docker compose ps` показывает `healthy` для всех.
 
+## Варианты запуска
+
+### Вариант 1: С DeepSeek API (рекомендуется для облака)
+Не требует GPU. ИИ-чат работает через cloud API (~$0.001/1K токенов).
+
+```bash
+cp .env.deepseek.example .env
+# Заполните DEEPSEEK_API_KEY (получить на platform.deepseek.com)
+docker compose up --build   # без --profile ollama
+```
+
+### Вариант 2: С Ollama (локальный ИИ, бесплатно)
+Требует 8+ ГБ RAM. Первый запуск скачивает модели (~5 ГБ).
+
+```bash
+cp .env.example .env
+# Заполните пароли
+docker compose --profile ollama up --build
+```
+
 ## Тестовые аккаунты
 
 | Email | Пароль | Роль |
