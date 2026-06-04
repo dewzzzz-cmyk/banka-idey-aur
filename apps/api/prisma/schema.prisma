@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  dept      String   @default("")
+  roles     String[] @default(["employee"])
+  isActive  Boolean  @default(true)
+  ldapDn    String?
+  createdAt DateTime @default(now())
+
+  ideas             Idea[]
+  votes             Vote[]
+  comments          Comment[]
+  pointLedger       PointLedger[]
+  badges            UserBadge[]
+  statusLogs        IdeaStatusLog[]
+  aiSessions        AiSession[]
+  implementations   Implementation[]
+  rewardAssignments RewardAssignment[] @relation("AssignedBy")
+  notifications     Notification[]
+  sessions          Session[]
+}
+
+model Idea {
+  id             String    @id @default(cuid())
+  author         User      @relation(fields: [authorId], references: [id])
+  authorId       String
+  status         String    @default("draft")
+  category       String    @default("proc")
+  cardData       Json      @default("{}")
+  isConfidential Boolean   @default(false)
+  isAnonymous    Boolean   @default(false)
+  viewCount      Int       @default(0)
+  embedding      Unsupported("vector(768)")?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  votes            Vote[]
+  comments         Comment[]
+  statusLogs       IdeaStatusLog[]
+  attachments      IdeaAttachment[]
+  implementation   Implementation?
+  rewardAssignment RewardAssignment?
+  slaTimer         SlaTimer?
+  aiSessions       AiSession[]
+
+  @@map("ideas")
+  @@index([status])
+  @@index([authorId])
+}
+
+model IdeaStatusLog {
+  id         String   @id @default(cuid())
+  idea       Idea     @relation(fields: [ideaId], references: [id])
+  ideaId     String
+  fromStatus String?
+  toStatus   String
+  actor      User     @relation(fields: [actorId], references: [id])
+  actorId    String
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  @@index([ideaId, createdAt])
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  idea      Idea     @relation(fields: [ideaId], references: [id])
+  ideaId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, ideaId])
+}
+
+model Comment {
+  id         String    @id @default(cuid())
+  idea       Idea      @relation(fields: [ideaId], references: [id])
+  ideaId     String
+  author     User      @relation(fields: [authorId], references: [id])
+  authorId   String
+  body       String
+  isInternal Boolean   @default(false)
+  parentId   String?
+  parent     Comment?  @relation("Replies", fields: [parentId], references: [id])
+  replies    Comment[] @relation("Replies")
+  createdAt  DateTime  @default(now())
+
+  @@index([ideaId])
+}
+
+model IdeaAttachment {
+  id          String   @id @default(cuid())
+  idea        Idea     @relation(fields: [ideaId], references: [id])
+  ideaId      String
+  uploaderId  String
+  filename    String
+  storagePath String
+  sizeBytes   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Direction {
+  id         String   @id @default(cuid())
+  name       String
+  curatorId  String?
+  categories String[] @default([])
+  createdAt  DateTime @default(now())
+}
+
+model Implementation {
+  id          String    @id @default(cuid())
+  idea        Idea      @relation(fields: [ideaId], references: [id])
+  ideaId      String    @unique
+  assignee    User?     @relation(fields: [assigneeId], references: [id])
+  assigneeId  String?
+  dueDate     DateTime?
+  steps       Json      @default("[]")
+  effectPlan  String?
+  effectFact  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model RewardAssignment {
+  id           String   @id @default(cuid())
+  idea         Idea     @relation(fields: [ideaId], references: [id])
+  ideaId       String   @unique
+  grade        String
+  amount       Float?
+  assignedBy   User     @relation("AssignedBy", fields: [assignedById], references: [id])
+  assignedById String
+  status       String   @default("pending")
+  createdAt    DateTime @default(now())
+}
+
+model PointLedger {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  delta     Int
+  reason    String
+  refIdeaId String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  badgeType String
+  awardedAt DateTime @default(now())
+}
+
+model SlaTimer {
+  id          String    @id @default(cuid())
+  idea        Idea      @relation(fields: [ideaId], references: [id])
+  ideaId      String    @unique
+  deadline    DateTime
+  escalatedTo String?
+  createdAt   DateTime  @default(now())
+}
+
+model KnowledgeChunk {
+  id        String    @id @default(cuid())
+  title     String
+  body      String
+  chunkType String    @default("regulation")
+  updatedAt DateTime  @updatedAt
+  embedding Unsupported("vector(768)")?
+
+  @@map("knowledge_chunks")
+}
+
+model AiSession {
+  id              String   @id @default(cuid())
+  user            User     @relation(fields: [userId], references: [id])
+  userId          String
+  idea            Idea?    @relation(fields: [ideaId], references: [id])
+  ideaId          String?
+  collectedFields Json     @default("{}")
+  messages        Json     @default("[]")
+  currentStep     Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AiPrompt {
+  id          String   @id @default(cuid())
+  version     Int      @unique
+  body        String
+  isActive    Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  text      String
+  icon      String   @default("bell")
+  isRead    Boolean  @default(false)
+  accent    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+}
+
+model Session {
+  sid    String   @id
+  sess   Json
+  expire DateTime
+  user   User?    @relation(fields: [userId], references: [id])
+  userId String?
+
+  @@index([expire])
+}

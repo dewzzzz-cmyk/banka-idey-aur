@@ -1,0 +1,12 @@
+﻿node_modules/
+dist/
+.env
+.env.dev
+.env.prod
+*.log
+.DS_Store
+Thumbs.db
+.pnpm-store/
+postgres_data/
+ollama_models/
+uploads/

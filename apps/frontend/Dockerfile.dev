@@ -1,0 +1,23 @@
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install -g pnpm@9
+
+COPY package.json pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml* ./
+COPY packages/types/package.json ./packages/types/
+COPY apps/api/package.json ./apps/api/
+COPY apps/frontend/package.json ./apps/frontend/
+
+RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+
+COPY packages/types/src ./packages/types/src
+COPY apps/frontend/src ./apps/frontend/src
+COPY apps/frontend/public ./apps/frontend/public
+COPY apps/frontend/index.html ./apps/frontend/
+COPY apps/frontend/vite.config.ts ./apps/frontend/
+COPY apps/frontend/tsconfig.json ./apps/frontend/
+COPY tsconfig.base.json ./
+
+WORKDIR /app/apps/frontend
+EXPOSE 5173
+CMD ["pnpm", "dev"]

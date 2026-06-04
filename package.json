@@ -1,0 +1,10 @@
+{
+  "name": "portal-idea",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm --filter \"./packages/*\" build && pnpm --filter \"./apps/*\" build",
+    "typecheck": "pnpm --parallel --filter \"./apps/*\" typecheck"
+  },
+  "engines": { "node": ">=20", "pnpm": ">=9" }
+}

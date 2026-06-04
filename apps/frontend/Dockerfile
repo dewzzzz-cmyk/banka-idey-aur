@@ -1,0 +1,20 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+RUN npm install -g pnpm@9
+
+COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
+COPY packages/types/package.json ./packages/types/
+COPY apps/frontend/package.json ./apps/frontend/
+
+RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+
+COPY packages/types/src ./packages/types/src
+COPY apps/frontend ./apps/frontend
+
+WORKDIR /app/apps/frontend
+RUN pnpm build
+
+FROM nginx:alpine
+COPY --from=builder /app/apps/frontend/dist /usr/share/nginx/html
+COPY infra/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

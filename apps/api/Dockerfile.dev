@@ -1,0 +1,33 @@
+FROM node:20-alpine
+WORKDIR /app
+
+# Required for Prisma query engine on Alpine
+RUN apk add --no-cache openssl libc6-compat
+
+# Install pnpm
+RUN npm install -g pnpm@9
+
+# Copy monorepo root manifests
+COPY package.json pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml* ./
+
+# Copy all packages and apps manifests for dependency resolution
+COPY packages/types/package.json ./packages/types/
+COPY apps/api/package.json ./apps/api/
+COPY apps/frontend/package.json ./apps/frontend/
+
+# Install all dependencies (workspace aware)
+RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
+
+# Copy Prisma schema and generate client
+COPY apps/api/prisma ./apps/api/prisma
+RUN cd apps/api && pnpm exec prisma generate
+
+# Copy source (rest mounted as volume in dev)
+COPY apps/api/src ./apps/api/src
+COPY packages/types/src ./packages/types/src
+
+WORKDIR /app/apps/api
+EXPOSE 3000
+
+CMD ["sh", "-c", "pnpm exec prisma db push --accept-data-loss && pnpm exec tsx prisma/seed.ts; pnpm dev"]
