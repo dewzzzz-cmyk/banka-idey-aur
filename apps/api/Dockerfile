@@ -42,4 +42,4 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
 WORKDIR /app/apps/api
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm exec prisma db push --accept-data-loss && node dist/server.js"]
+CMD ["sh", "-c", "pnpm exec prisma db push --accept-data-loss && node dist/seed.js; node dist/server.js"]
