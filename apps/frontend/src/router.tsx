@@ -3,6 +3,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { AppShell } from './components/layout/AppShell'
 import LoginPage from './pages/LoginPage'
 import { useAuthStore } from './stores/auth'
+import { API_BASE } from './lib/api'
 
 const Home      = lazy(() => import('./pages/Home'))
 const Chat      = lazy(() => import('./pages/Chat'))
@@ -26,7 +27,7 @@ function ProtectedRoute() {
 
   useEffect(() => {
     if (!user) {
-      fetch('/api/auth/me', { credentials: 'include' })
+      fetch(API_BASE + '/api/auth/me', { credentials: 'include' })
         .then(r => r.ok ? r.json() : null)
         .then(data => {
           if (data?.user) setUser(data.user)
