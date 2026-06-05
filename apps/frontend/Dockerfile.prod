@@ -19,5 +19,6 @@ RUN pnpm exec vite build
 
 FROM nginx:alpine
 COPY --from=builder /app/apps/frontend/dist /usr/share/nginx/html
-COPY apps/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Place as template so nginx entrypoint runs envsubst to substitute $PORT
+COPY apps/frontend/nginx.conf /etc/nginx/templates/default.conf.template
 EXPOSE 80
