@@ -65,7 +65,7 @@ export const ideaRouter = router({
           id: i.id,
           status: i.status,
           category: i.category,
-          cardData: i.cardData as IdeaCardData,
+          cardData: i.cardData as unknown as IdeaCardData,
           isConfidential: i.isConfidential,
           isAnonymous: i.isAnonymous,
           authorId: i.isAnonymous && !canSeeAnon ? 'anonymous' : i.authorId,

@@ -48,10 +48,10 @@ export async function streamChatHandler(
     : null
 
   const previousMessages: AiMessage[] = session
-    ? (session.messages as AiMessage[])
+    ? (session.messages as unknown as AiMessage[])
     : []
   const fields: AiCollectedFields = session
-    ? (session.collectedFields as AiCollectedFields)
+    ? (session.collectedFields as unknown as AiCollectedFields)
     : inputFields
 
   const updatedMessages: AiMessage[] = [
@@ -105,8 +105,8 @@ export async function streamChatHandler(
     await prisma.aiSession.update({
       where: { id: session.id },
       data: {
-        messages: savedMessages,
-        collectedFields: fields,
+        messages: savedMessages as any,
+        collectedFields: fields as any,
         currentStep: (session.currentStep ?? 0) + 1,
       },
     })
@@ -115,8 +115,8 @@ export async function streamChatHandler(
     const newSession = await prisma.aiSession.create({
       data: {
         userId: user.id,
-        messages: savedMessages,
-        collectedFields: fields,
+        messages: savedMessages as any,
+        collectedFields: fields as any,
         currentStep: 1,
       },
     })
