@@ -24,20 +24,17 @@ const Fallback = () => (
 
 function ProtectedRoute() {
   const { user, setUser } = useAuthStore()
-  const [checking, setChecking] = useState(!user)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    if (!user) {
-      fetch(API_BASE + '/api/auth/me', { credentials: 'include' })
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-          if (data?.user) setUser(data.user)
-        })
-        .catch(() => {})
-        .finally(() => setChecking(false))
-    } else {
-      setChecking(false)
-    }
+    fetch(API_BASE + '/api/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.user) setUser(data.user)
+        else setUser(null)
+      })
+      .catch(() => setUser(null))
+      .finally(() => setChecking(false))
   }, [])
 
   if (checking) return <Fallback />
