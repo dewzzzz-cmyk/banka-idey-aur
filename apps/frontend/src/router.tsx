@@ -14,6 +14,7 @@ const Curator   = lazy(() => import('./pages/Curator'))
 const Impl      = lazy(() => import('./pages/Impl'))
 const Analytics = lazy(() => import('./pages/Analytics'))
 const Admin     = lazy(() => import('./pages/Admin'))
+const Guide     = lazy(() => import('./pages/Guide'))
 
 const Fallback = () => (
   <div className="wrap fade">
@@ -64,6 +65,7 @@ export const router = createBrowserRouter([
         { path: '/impl',       element: <S C={Impl} /> },
         { path: '/analytics',  element: <S C={Analytics} /> },
         { path: '/admin',      element: <S C={Admin} /> },
+        { path: '/guide',      element: <S C={Guide} /> },
         { path: '*',           element: <Navigate to="/" replace /> },
       ],
     }],

@@ -69,7 +69,7 @@ export default function Home() {
               <Icon name="bulb" size={19} />
               Предложить идею
             </button>
-            <button className="btn btn-lg cta-secondary">
+            <button className="btn btn-lg cta-secondary" onClick={() => navigate('/guide')}>
               <Icon name="eye" size={18} />
               Как это работает
             </button>

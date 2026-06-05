@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const STEPS = [
   {
@@ -20,6 +21,7 @@ const STEPS = [
 
 export function OnboardingModal() {
   const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!localStorage.getItem('aur_onboarding')) {
@@ -31,6 +33,11 @@ export function OnboardingModal() {
   const close = () => {
     localStorage.setItem('aur_onboarding', '1')
     setOpen(false)
+  }
+
+  const startWorking = () => {
+    close()
+    navigate('/chat')
   }
 
   if (!open) return null
@@ -79,7 +86,7 @@ export function OnboardingModal() {
           ))}
         </div>
 
-        <button className="btn btn-primary btn-block" onClick={close} style={{ fontSize: 15, marginBottom: 10 }}>
+        <button className="btn btn-primary btn-block" onClick={startWorking} style={{ fontSize: 15, marginBottom: 10 }}>
           Начать работу →
         </button>
         <button
