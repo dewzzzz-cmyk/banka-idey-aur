@@ -67,9 +67,21 @@ async function main() {
   console.log(`Created ${users.length} users`)
 
   const ideaCount = await prisma.idea.count()
-  const shouldSeedIdeas = ideaCount === 0
+  const shouldSeedIdeas = ideaCount < 16
   if (!shouldSeedIdeas) {
-    console.log('Ideas already seeded, skipping.')
+    console.log('Ideas already seeded (>= 16), skipping.')
+  } else if (ideaCount > 0) {
+    // Old partial seed exists — clear it so we can reseed cleanly
+    console.log(`Clearing ${ideaCount} old ideas to reseed with full dataset...`)
+    await prisma.vote.deleteMany()
+    await prisma.comment.deleteMany()
+    await prisma.ideaStatusLog.deleteMany()
+    await prisma.slaTimer.deleteMany()
+    await prisma.implementation.deleteMany()
+    await prisma.notification.deleteMany()
+    await prisma.pointLedger.deleteMany()
+    await prisma.aiSession.deleteMany()
+    await prisma.idea.deleteMany()
   }
 
   // Create AI prompt
