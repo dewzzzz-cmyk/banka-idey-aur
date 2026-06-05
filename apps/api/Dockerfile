@@ -26,9 +26,11 @@ COPY packages/types/package.json ./packages/types/
 COPY apps/api/package.json ./apps/api/
 RUN pnpm install --prod --frozen-lockfile 2>/dev/null || pnpm install --prod
 
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/node_modules/.prisma ./apps/api/node_modules/.prisma
+# Copy prisma schema and generate client in runner (pnpm workspace may hoist .prisma)
 COPY apps/api/prisma ./apps/api/prisma
+RUN cd apps/api && pnpm exec prisma generate
+
+COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
 WORKDIR /app/apps/api
 EXPOSE 3000
