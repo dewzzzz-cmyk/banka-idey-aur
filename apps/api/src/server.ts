@@ -24,9 +24,12 @@ async function main() {
   // Cookie (required by @fastify/session)
   await app.register(fastifyCookie)
 
-  // CORS — allow credentials in dev
+  // CORS — allow configured origin(s) in prod, all in dev
+  const corsOrigin: string | string[] | boolean = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(s => s.trim())
+    : process.env.NODE_ENV !== 'production'
   await app.register(fastifyCors, {
-    origin: process.env.NODE_ENV === 'production' ? false : true,
+    origin: corsOrigin,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })
