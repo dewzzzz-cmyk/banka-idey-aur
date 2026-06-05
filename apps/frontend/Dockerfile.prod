@@ -4,6 +4,8 @@ RUN npm install -g pnpm@9
 
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY packages/types/package.json ./packages/types/
+# @portal/api is in devDependencies for tRPC router types — pnpm needs package.json to resolve workspace ref
+COPY apps/api/package.json ./apps/api/
 COPY apps/frontend/package.json ./apps/frontend/
 
 RUN pnpm install --frozen-lockfile 2>/dev/null || pnpm install
@@ -12,7 +14,8 @@ COPY packages/types/src ./packages/types/src
 COPY apps/frontend ./apps/frontend
 
 WORKDIR /app/apps/frontend
-RUN pnpm build
+# Use vite build directly (esbuild strips "import type" without resolving API source)
+RUN pnpm exec vite build
 
 FROM nginx:alpine
 COPY --from=builder /app/apps/frontend/dist /usr/share/nginx/html
