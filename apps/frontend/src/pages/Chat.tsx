@@ -63,48 +63,23 @@ export default function Chat() {
 
       if (!resp.ok) throw new Error('AI unavailable')
 
-      const reader = resp.body!.getReader()
-      const decoder = new TextDecoder()
+      const data = await resp.json()
 
-      setChatMessages((m) => [...m, { from: 'ai', text: '' }])
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        const lines = decoder.decode(value).split('\n')
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue
-          try {
-            const data = JSON.parse(line.slice(6))
-            if (data.text) {
-              aiText += data.text
-              setChatMessages((m) => {
-                const copy = [...m]
-                copy[copy.length - 1] = { from: 'ai', text: aiText }
-                return copy
-              })
-            }
-            if (data.sessionId) newSessionId = data.sessionId
-            if (data.collectedFields) setCollectedFields(data.collectedFields)
-            if (data.error) {
-              setAiDown(true)
-              setChatMessages((m) => {
-                const copy = [...m]
-                copy[copy.length - 1] = { from: 'ai', text: data.error }
-                return copy
-              })
-            }
-            if (data.done) {
-              if (newSessionId && newSessionId !== sessionId) setSessionId(newSessionId)
-              setStep((s) => {
-                const ns = Math.min(s + 1, STEPS.length - 1)
-                if (ns >= 3) setReady(true)
-                return ns
-              })
-            }
-          } catch {
-            // ignore parse errors
-          }
+      if (data.error) {
+        setAiDown(true)
+        setChatMessages((m) => [...m, { from: 'ai', text: data.error }])
+      } else {
+        aiText = data.text ?? ''
+        setChatMessages((m) => [...m, { from: 'ai', text: aiText }])
+        if (data.sessionId) newSessionId = data.sessionId
+        if (data.collectedFields) setCollectedFields(data.collectedFields)
+        if (data.done) {
+          if (newSessionId && newSessionId !== sessionId) setSessionId(newSessionId)
+          setStep((s) => {
+            const ns = Math.min(s + 1, STEPS.length - 1)
+            if (ns >= 3) setReady(true)
+            return ns
+          })
         }
       }
     } catch {

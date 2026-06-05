@@ -1,6 +1,6 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { createOpenAI } from '@ai-sdk/openai'
-import { streamText } from 'ai'
+import { generateText } from 'ai'
 import { prisma } from '../db.js'
 import { getActivePrompt, buildMessages } from './prompt.js'
 import type { AiCollectedFields, AiMessage } from '@portal/types'
@@ -62,35 +62,22 @@ export async function streamChatHandler(
   const systemPrompt = await getActivePrompt()
   const chatMessages = buildMessages(systemPrompt, updatedMessages, fields)
 
-  reply.raw.setHeader('Content-Type', 'text/event-stream; charset=utf-8')
-  reply.raw.setHeader('Cache-Control', 'no-cache, no-transform')
-  reply.raw.setHeader('Connection', 'keep-alive')
-  reply.raw.setHeader('X-Accel-Buffering', 'no')
-  reply.raw.flushHeaders()
-
   let fullResponse = ''
 
   try {
     const provider = process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'ollama'
     console.log(`[AI stream] provider=${provider}`)
     const aiClient = getAIClient()
-    const result = await streamText({
+    const result = await generateText({
       model: aiClient(getModelName()),
       messages: chatMessages,
       temperature: 0.7,
       maxTokens: 1024,
     })
-
-    for await (const chunk of result.textStream) {
-      fullResponse += chunk
-      reply.raw.write(`data: ${JSON.stringify({ text: chunk })}\n\n`)
-    }
+    fullResponse = result.text
   } catch (e: any) {
     console.error('[AI stream] Error:', e?.message)
-    const errMsg =
-      'ИИ-помощник временно недоступен. Вы можете заполнить карточку вручную.'
-    reply.raw.write(`data: ${JSON.stringify({ error: errMsg })}\n\n`)
-    fullResponse = errMsg
+    fullResponse = 'ИИ-помощник временно недоступен. Вы можете заполнить карточку вручную.'
   }
 
   // Save session
@@ -123,8 +110,11 @@ export async function streamChatHandler(
     savedSessionId = newSession.id
   }
 
-  reply.raw.write(
-    `data: ${JSON.stringify({ sessionId: savedSessionId, done: true })}\n\n`
-  )
-  reply.raw.end()
+  const isError = fullResponse.startsWith('ИИ-помощник временно недоступен')
+  return reply.status(200).send({
+    text: fullResponse,
+    sessionId: savedSessionId,
+    done: true,
+    ...(isError ? { error: fullResponse } : {}),
+  })
 }
