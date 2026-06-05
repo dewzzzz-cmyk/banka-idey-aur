@@ -215,3 +215,52 @@
   .kpi-grid { grid-template-columns: 1fr; }
   .reg-row { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   MOBILE SCREENS2 (≤768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ---- ANALYTICS ---- */
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .an-row-2-1, .an-row-1-1, .admin-2col, .admin-prompt { grid-template-columns: 1fr; }
+
+  .kpi { padding: 14px 16px; }
+  .kpi-val { font-size: 24px; }
+  .kpi-lbl { min-height: unset; margin-bottom: 8px; }
+
+  .funnel-h-lbl { width: 80px; font-size: 12px; }
+  .funnel-h-bar { min-width: 32px; }
+  .funnel-h-n { font-size: 12px; }
+
+  .donut-wrap { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .donut { width: 120px; height: 120px; }
+
+  .catbar-lbl { width: 90px; font-size: 12px; }
+
+  .chart-card { padding: 16px; }
+
+  /* ---- IMPLEMENTER ---- */
+  .effect-grid { grid-template-columns: 1fr; }
+  .impl-meta { gap: 10px; }
+
+  /* ---- ADMIN ---- */
+  .reg-head { display: none; }
+  .reg-row { grid-template-columns: 1fr; gap: 4px; padding: 12px 0; }
+  .reg-idea { white-space: normal; }
+  .reg-total { flex-direction: column; gap: 4px; }
+
+  .admin-pane { gap: 12px; }
+  .grade-row { padding: 12px 14px; gap: 10px; }
+  .grade-main b { font-size: 13px; }
+
+  /* KB rows */
+  .kb-row { gap: 8px; }
+
+  /* ---- COMMENTS ---- */
+  .comment-compose { gap: 7px; }
+}
+
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .authstats { flex-direction: column; gap: 2px; }
+}

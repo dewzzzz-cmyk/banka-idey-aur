@@ -18,7 +18,11 @@ const TITLES: Record<string, { t: string; s: string }> = {
   '/admin':     { t: 'Администрирование',     s: 'Справочники, ИИ, грейды и реестр выплат' },
 }
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuToggle?: () => void
+}
+
+export function TopBar({ onMenuToggle }: TopBarProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { notifOpen, setNotifOpen, theme, setTheme } = useUIStore()
@@ -67,12 +71,22 @@ export function TopBar() {
 
   return (
     <header className="topbar">
-      <div>
+      {/* Hamburger — visible only on mobile */}
+      <button
+        className="burger iconbtn"
+        onClick={onMenuToggle}
+        aria-label="Открыть меню"
+        style={{ display: 'none', flexShrink: 0 }}
+      >
+        <Icon name="menu" size={20} />
+      </button>
+
+      <div className="topbar-title">
         <div className="pgtitle">{title.t}</div>
         <div className="pgsub">{title.s}</div>
       </div>
 
-      <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--line-2)', borderRadius: 10, padding: '7px 13px', width: 230, flexShrink: 0 }}>
+      <div className="topbar-search" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--line-2)', borderRadius: 10, padding: '7px 13px', width: 230, flexShrink: 0 }}>
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--faint)', flexShrink: 0 }}>
           <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
         </svg>

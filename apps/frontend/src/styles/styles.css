@@ -331,6 +331,95 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 0; }
 @keyframes shimmer { 0%{background-position:-400px 0;} 100%{background-position:400px 0;} }
 .sk { background: linear-gradient(90deg, #EEF1F6 25%, #F6F8FB 50%, #EEF1F6 75%); background-size: 800px 100%; animation: shimmer 1.3s infinite linear; border-radius: 7px; }
 
+/* ============================================================
+   MOBILE — off-canvas rail + responsive shell
+   ============================================================ */
+
+/* Rail overlay (mobile backdrop) */
+.rail-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(20,27,39,.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 99;
+  animation: fadeUp .2s both;
+}
+.rail-overlay.open { display: block; }
+
+@media (max-width: 768px) {
+  /* Single-column shell */
+  .app {
+    grid-template-columns: 1fr;
+  }
+
+  /* Rail becomes off-canvas drawer */
+  .rail {
+    position: fixed;
+    left: 0; top: 0;
+    height: 100%;
+    width: 276px;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform .3s cubic-bezier(.2,.7,.3,1), box-shadow .3s;
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .rail.open {
+    transform: translateX(0);
+    box-shadow: var(--sh-pop);
+  }
+
+  /* Close button inside rail */
+  .rail-close {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--bg-2);
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: var(--fast);
+  }
+  .rail-close:hover { background: var(--line); color: var(--ink); }
+
+  /* Hamburger button */
+  .burger { display: flex !important; }
+
+  /* Topbar */
+  .topbar {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  /* Hide search bar on small screens */
+  .topbar-search { display: none !important; }
+  /* Hide subtitle */
+  .topbar .pgsub { display: none; }
+  /* Shrink title */
+  .topbar .pgtitle { font-size: 16px; }
+
+  /* Canvas — less horizontal padding, extra bottom for safe area */
+  .canvas { padding: 16px 14px 72px; }
+
+  /* Scrollbars thinner on mobile */
+  *::-webkit-scrollbar { width: 4px; height: 4px; }
+
+  /* iconbtn slightly larger tap target */
+  .iconbtn { width: 40px; height: 40px; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 9px 12px; gap: 6px; }
+  .canvas { padding: 12px 12px 72px; }
+}
+
 /* Dark theme */
 [data-theme="dark"] {
   --bg: #0F1117;

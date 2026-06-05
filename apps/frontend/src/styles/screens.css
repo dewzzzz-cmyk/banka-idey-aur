@@ -348,3 +348,140 @@
   .counters.row { grid-template-columns: 1fr 1fr; }
   .hall-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================
+   MOBILE SCREENS (≤768px)
+   ============================================================ */
+@media (max-width: 768px) {
+  /* ---- HOME ---- */
+  .cta-hero { padding: 28px 22px; border-radius: var(--r-lg); }
+  .cta-hero.big { padding: 32px 22px; }
+  .cta-title { font-size: 24px; }
+  .cta-sub { font-size: 14px; margin-bottom: 18px; }
+  .cta-actions { gap: 8px; }
+  .cta-trust { flex-wrap: wrap; gap: 8px; }
+
+  .counters { grid-template-columns: 1fr 1fr; }
+  .counters.row { grid-template-columns: 1fr 1fr; }
+
+  .home-2col { grid-template-columns: 1fr; }
+  .home-aside { position: static; }
+
+  .topweek-grid { grid-template-columns: 1fr; }
+
+  .feed-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .feed-filters { margin-left: 0; }
+
+  .section-h { flex-wrap: wrap; gap: 8px; }
+
+  /* ---- IDEA CARD ---- */
+  .idea { padding: 14px 14px 12px; gap: 10px; }
+  .idea-title { font-size: 15px; }
+  .idea-meta-row { gap: 10px; padding: 9px 11px; }
+  .idea-foot { gap: 8px; flex-wrap: wrap; }
+  .idea-stats { gap: 10px; }
+
+  /* ---- CHAT ---- */
+  .chat-head { gap: 10px; margin-bottom: 14px; }
+  .chat-head-ic { width: 40px; height: 40px; border-radius: 12px; }
+  .chat-head-t { font-size: 15px; }
+  .chat-status { font-size: 12px; padding: 5px 10px; }
+
+  .chat-layout.has-side { grid-template-columns: 1fr; }
+  .chat-side { position: static; margin-top: 14px; }
+
+  /* Full-height chat column using dynamic viewport */
+  .chat-col {
+    height: calc(100dvh - 150px);
+    min-height: 340px;
+  }
+  .chat-scroll { padding: 14px 14px 6px; }
+
+  .msg-bub { max-width: 88%; font-size: 14px; padding: 10px 13px; }
+
+  /* Quick chips — horizontal scroll instead of wrap */
+  .quickrow {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    gap: 6px;
+  }
+  .quickrow::-webkit-scrollbar { display: none; }
+  .quickchip { white-space: nowrap; flex-shrink: 0; font-size: 12px; padding: 6px 11px; }
+
+  .helprow { gap: 6px; }
+  .composer { padding: 10px 12px; }
+  .composer-foot { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .composer-foot > div { width: 100%; justify-content: flex-end; }
+
+  .aidown { flex-wrap: wrap; gap: 10px; }
+  .aidown-ic { width: 34px; height: 34px; }
+
+  .card-ready { flex-wrap: wrap; gap: 10px; }
+  .card-ready .btn { margin-left: 0; width: 100%; justify-content: center; }
+
+  /* ---- CARD SCREEN ---- */
+  .cardscreen.split { grid-template-columns: 1fr; }
+  .card-side { position: static; }
+  .card-title-block { padding: 16px 18px; }
+  .card-title-input { font-size: 20px; }
+  .card-fields { padding: 4px 18px; }
+  .card-fields-stack .field { padding: 14px 16px; }
+  .card-actions-bar { flex-wrap: wrap; gap: 8px; }
+
+  /* ---- LISTS ---- */
+  .lists-head { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .period-pick { margin-left: 0; }
+  .hall-hero { flex-direction: column; gap: 14px; padding: 20px 18px; }
+  .hall-hero-stat { margin-left: 0; text-align: left; }
+  .hall-hero h2 { font-size: 18px; }
+  .hall-grid { grid-template-columns: 1fr; }
+
+  /* ---- CABINET ---- */
+  .cab-grid { grid-template-columns: 1fr; }
+  .cab-aside { position: static; }
+  .profile { flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px; }
+  .profile-points { align-self: stretch; justify-content: center; }
+  .badges-grid { grid-template-columns: repeat(3,1fr); }
+
+  /* ---- CURATOR ---- */
+  .cur-layout { grid-template-columns: 1fr; }
+  .cur-queue { position: static; max-height: none; }
+  .cur-head { flex-wrap: wrap; gap: 8px; }
+  .cur-head-stats { flex-wrap: wrap; gap: 6px; }
+  .cur-card { padding: 16px; }
+  .cur-actions { flex-wrap: wrap; }
+
+  /* ---- MODALS / DRAWERS ---- */
+  .modal { width: 100%; max-width: calc(100vw - 32px); padding: 20px; }
+  .drawer { width: 100%; max-width: 100%; padding: 20px 18px 32px; }
+
+  /* ---- STATS ---- */
+  .stat .sn { font-size: 24px; }
+
+  /* ---- NOTIF POPUP ---- */
+  .notif-pop { width: calc(100vw - 24px); right: -8px; }
+
+  /* ---- TOAST ---- */
+  .toast { bottom: 16px; width: calc(100vw - 32px); left: 16px; transform: none; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .cta-hero { padding: 22px 16px; }
+  .cta-title { font-size: 20px; }
+
+  .chat-col {
+    height: calc(100dvh - 140px);
+    min-height: 300px;
+  }
+
+  .badges-grid { grid-template-columns: repeat(2,1fr); }
+  .funnel { gap: 8px; }
+
+  /* Tab scrollable */
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
+}

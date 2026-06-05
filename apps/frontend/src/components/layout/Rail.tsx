@@ -1,6 +1,6 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
 import { Icon } from '../ui/Icon'
-import { Logo } from './Logo'
 import { useAuthStore } from '@/stores/auth'
 
 const NAV = [
@@ -20,24 +20,47 @@ const NAV_ADMIN = [
   { to: '/admin',     label: 'Администрирование',    icon: 'cog' },
 ]
 
-export function Rail() {
-  const { user, logout } = useAuthStore()
+interface RailProps {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function Rail({ isOpen, onClose }: RailProps) {
+  const { user } = useAuthStore()
+  const location = useLocation()
+
+  // Close rail on navigation (mobile)
+  useEffect(() => {
+    onClose?.()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   return (
-    <nav className="rail">
+    <nav className={`rail${isOpen ? ' open' : ''}`}>
       <div className="brand">
-        <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="6" y="5" width="12" height="14" rx="1"/>
-          <ellipse cx="12" cy="5" rx="6" ry="2"/>
-          <ellipse cx="12" cy="19" rx="6" ry="2"/>
-          <path d="M11 3.5 C11.5 2.8 12.5 2.8 13 3.5"/>
-          <line x1="7" y1="9" x2="17" y2="9"/>
-          <line x1="7" y1="15" x2="17" y2="15"/>
-        </svg>
+        <div className="logo" style={{ background: 'linear-gradient(150deg, var(--accent), #4D7BFF)', borderRadius: 11, width: 38, height: 38, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
+          <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="6" y="5" width="12" height="14" rx="1"/>
+            <ellipse cx="12" cy="5" rx="6" ry="2"/>
+            <ellipse cx="12" cy="19" rx="6" ry="2"/>
+            <path d="M11 3.5 C11.5 2.8 12.5 2.8 13 3.5"/>
+            <line x1="7" y1="9" x2="17" y2="9"/>
+            <line x1="7" y1="15" x2="17" y2="15"/>
+          </svg>
+        </div>
         <div className="name">
           Банка Идей
-          <small>Открой идею</small>
+          <small>Открой идею · can.ru</small>
         </div>
+        {/* Close button — visible only on mobile */}
+        <button
+          className="rail-close"
+          onClick={onClose}
+          aria-label="Закрыть меню"
+          style={{ display: 'none' }}
+        >
+          <Icon name="x" size={20} />
+        </button>
       </div>
 
       {NAV.map((n) => (
