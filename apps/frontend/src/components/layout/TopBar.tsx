@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '../ui/Icon'
 import { Avatar } from '../ui/Avatar'
 import { useUIStore } from '@/stores/ui'
@@ -20,8 +20,21 @@ const TITLES: Record<string, { t: string; s: string }> = {
 
 export function TopBar() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { notifOpen, setNotifOpen, theme, setTheme } = useUIStore()
-  const { user } = useAuthStore()
+  const { user, logout } = useAuthStore()
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const userMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const close = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [])
 
   const [q, setQ] = useState('')
   const debRef = useRef<ReturnType<typeof setTimeout>>()
@@ -114,7 +127,62 @@ export function TopBar() {
         )}
       </button>
 
-      {user && <Avatar name={user.name} size="md" />}
+      {user && (
+        <div ref={userMenuRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setUserMenuOpen((v) => !v)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+            title={user.name}
+          >
+            <Avatar name={user.name} size="md" />
+          </button>
+
+          {userMenuOpen && (
+            <div style={{
+              position: 'absolute', right: 0, top: 'calc(100% + 8px)',
+              background: 'var(--surface)', border: '1px solid var(--line-2)',
+              borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+              minWidth: 210, zIndex: 200, padding: '6px 0',
+            }}>
+              {/* User info */}
+              <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid var(--line-2)' }}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{user.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--faint)' }}>{user.email}</div>
+                {user.dept && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{user.dept}</div>}
+              </div>
+              {/* Actions */}
+              <button
+                onClick={() => { setUserMenuOpen(false); navigate('/cabinet') }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--ink)', textAlign: 'left' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                <Icon name="user" size={16} />
+                Личный кабинет
+              </button>
+              <button
+                onClick={() => { setUserMenuOpen(false); navigate('/guide') }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--ink)', textAlign: 'left' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                <Icon name="book" size={16} />
+                Руководство
+              </button>
+              <div style={{ height: 1, background: 'var(--line-2)', margin: '4px 0' }} />
+              <button
+                onClick={async () => { setUserMenuOpen(false); await logout(); navigate('/login') }}
+                style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#e53935', textAlign: 'left' }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                <Icon name="logout" size={16} />
+                Выйти
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   )
 }
