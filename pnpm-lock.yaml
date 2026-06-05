@@ -55,6 +55,9 @@ importers:
       pg-boss:
         specifier: ^9.0.3
         version: 9.0.3
+      prisma:
+        specifier: ^5.14.0
+        version: 5.22.0
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -68,9 +71,6 @@ importers:
       '@types/passport-local':
         specifier: ^1.0.38
         version: 1.0.38
-      prisma:
-        specifier: ^5.14.0
-        version: 5.22.0
       tsx:
         specifier: ^4.11.0
         version: 4.22.4

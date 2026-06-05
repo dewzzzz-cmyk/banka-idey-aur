@@ -1,0 +1,8 @@
+[build]
+dockerfilePath = "apps/frontend/Dockerfile.prod"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
