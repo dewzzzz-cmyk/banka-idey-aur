@@ -122,7 +122,7 @@ async function main() {
     console.warn('[pg-boss] Workers init failed (non-fatal):', e)
   }
 
-  const port = Number(process.env.API_PORT ?? 3000)
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3000)
   await app.listen({ port, host: '0.0.0.0' })
   console.log(`[api] Listening on :${port}`)
 }
