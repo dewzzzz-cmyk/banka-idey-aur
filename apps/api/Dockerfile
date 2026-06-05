@@ -1,5 +1,6 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+RUN apk add --no-cache openssl
 RUN npm install -g pnpm@9
 
 COPY package.json pnpm-workspace.yaml ./
@@ -19,6 +20,7 @@ RUN cd apps/api && pnpm build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
+RUN apk add --no-cache openssl
 RUN npm install -g pnpm@9
 
 COPY package.json pnpm-workspace.yaml ./
@@ -26,7 +28,7 @@ COPY packages/types/package.json ./packages/types/
 COPY apps/api/package.json ./apps/api/
 RUN pnpm install --prod --frozen-lockfile 2>/dev/null || pnpm install --prod
 
-# Copy prisma schema and generate client in runner (pnpm workspace may hoist .prisma)
+# Copy prisma schema and generate client (needs openssl)
 COPY apps/api/prisma ./apps/api/prisma
 RUN cd apps/api && pnpm exec prisma generate
 
