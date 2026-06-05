@@ -45,9 +45,9 @@ async function main() {
   await app.register(fastifySession, {
     secret: process.env.SESSION_SECRET ?? 'fallback_secret_change_in_production_32chars',
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,          // always HTTPS (Railway terminates TLS)
       httpOnly: true,
-      sameSite: 'lax',
+      sameSite: 'none',      // cross-origin cross-site fetch (frontend ≠ api subdomain)
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
     store: sessionStore,
