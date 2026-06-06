@@ -1,8 +1,9 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { createOpenAI } from '@ai-sdk/openai'
-import { generateText } from 'ai'
+import { generateObject } from 'ai'
+import { z } from 'zod'
 import { prisma } from '../db.js'
-import { getActivePrompt, buildMessages } from './prompt.js'
+import { getActivePrompt } from './prompt.js'
 import type { AiCollectedFields, AiMessage } from '@portal/types'
 
 function getAIClient() {
@@ -25,10 +26,53 @@ function getModelName() {
   return process.env.OLLAMA_MODEL ?? 'qwen2.5:7b'
 }
 
-export async function streamChatHandler(
-  req: FastifyRequest,
-  reply: FastifyReply
-) {
+// Structured schema: AI returns BOTH the chat message AND extracted idea fields
+const IdeaResponseSchema = z.object({
+  message: z
+    .string()
+    .describe('Разговорный ответ ИИ пользователю на русском языке (1-4 предложения)'),
+  title: z
+    .string()
+    .optional()
+    .describe('Краткий заголовок идеи (3–7 слов) — заполни если ясно из разговора'),
+  problem: z
+    .string()
+    .optional()
+    .describe('Описание проблемы/боли — что сейчас не работает или неэффективно'),
+  who: z
+    .string()
+    .optional()
+    .describe('Кто затронут: подразделение, количество людей, контекст'),
+  proposal: z
+    .string()
+    .optional()
+    .describe('Суть предложения — что конкретно нужно сделать'),
+  resources: z
+    .string()
+    .optional()
+    .describe('Необходимые ресурсы: время, деньги, люди'),
+  effect: z
+    .string()
+    .optional()
+    .describe('Ожидаемый эффект от внедрения'),
+  effectEstimate: z
+    .string()
+    .optional()
+    .describe('Количественная оценка эффекта (%, рубли, часы и т.д.)'),
+  done: z
+    .boolean()
+    .describe(
+      'true ТОЛЬКО когда problem И proposal И effect — все три поля заполнены. Иначе false.',
+    ),
+  step: z
+    .number()
+    .int()
+    .min(0)
+    .max(4)
+    .describe('Номер текущего шага (0=проблема, 1=контекст, 2=предложение, 3=ресурсы, 4=эффект)'),
+})
+
+export async function streamChatHandler(req: FastifyRequest, reply: FastifyReply) {
   const user = req.user as any
   if (!user) return reply.status(401).send({ error: 'Unauthorized' })
 
@@ -50,41 +94,78 @@ export async function streamChatHandler(
   const previousMessages: AiMessage[] = session
     ? (session.messages as unknown as AiMessage[])
     : []
-  const fields: AiCollectedFields = session
+  const previousFields: AiCollectedFields = session
     ? (session.collectedFields as unknown as AiCollectedFields)
     : inputFields
 
-  const updatedMessages: AiMessage[] = [
-    ...previousMessages,
-    { from: 'me', text: message },
-  ]
+  const updatedMessages: AiMessage[] = [...previousMessages, { from: 'me', text: message }]
 
   const systemPrompt = await getActivePrompt()
-  const chatMessages = buildMessages(systemPrompt, updatedMessages, fields)
 
-  let fullResponse = ''
+  // Build conversation history for the prompt
+  const convHistory = updatedMessages
+    .map((m) => `${m.from === 'me' ? 'Пользователь' : 'ИИ'}: ${m.text}`)
+    .join('\n')
+
+  const alreadyCollected = Object.entries(previousFields)
+    .filter(([, v]) => v)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n')
+
+  const systemFull = [
+    systemPrompt,
+    alreadyCollected ? `\n# УЖЕ СОБРАНО:\n${alreadyCollected}` : '',
+    `\n# ИНСТРУКЦИЯ:
+Ты собираешь идею через диалог. Задавай по ОДНОМУ уточняющему вопросу за раз.
+Порядок: сначала проблема → кто затронут → предложение → ресурсы → эффект.
+НЕ переходи к карточке пока не заполнены хотя бы problem, proposal и effect.
+Возвращай JSON согласно схеме. Поля заполняй по мере получения информации.`,
+  ]
+    .filter(Boolean)
+    .join('')
+
+  let fullResponse = 'ИИ-помощник временно недоступен. Вы можете заполнить карточку вручную.'
+  let collectedFields: AiCollectedFields = previousFields
+  let done = false
+  let step = session ? (session.currentStep ?? 0) : 0
 
   try {
-    const provider = process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'ollama'
-    console.log(`[AI stream] provider=${provider}`)
     const aiClient = getAIClient()
-    const result = await generateText({
-      model: aiClient(getModelName()),
-      messages: chatMessages,
+    const model = getModelName()
+    const provider = process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'ollama'
+    console.log(`[AI] provider=${provider} model=${model}`)
+
+    const result = await generateObject({
+      model: aiClient(model),
+      schema: IdeaResponseSchema,
+      system: systemFull,
+      prompt: convHistory,
       temperature: 0.7,
-      maxTokens: 1024,
     })
-    fullResponse = result.text
+
+    const obj = result.object
+    fullResponse = obj.message
+
+    // Merge newly extracted fields with previous ones (don't overwrite existing with empty)
+    collectedFields = {
+      title: obj.title || previousFields.title,
+      problem: obj.problem || previousFields.problem,
+      who: obj.who || previousFields.who,
+      proposal: obj.proposal || previousFields.proposal,
+      resources: obj.resources || previousFields.resources,
+      effect: obj.effect || previousFields.effect,
+      effectEstimate: obj.effectEstimate || previousFields.effectEstimate,
+    }
+
+    done = obj.done ?? false
+    step = obj.step ?? step
   } catch (e: any) {
-    console.error('[AI stream] Error:', e?.message)
+    console.error('[AI] Error:', e?.message)
     fullResponse = 'ИИ-помощник временно недоступен. Вы можете заполнить карточку вручную.'
   }
 
   // Save session
-  const finalMessages: AiMessage[] = [
-    ...updatedMessages,
-    { from: 'ai', text: fullResponse },
-  ]
+  const finalMessages: AiMessage[] = [...updatedMessages, { from: 'ai', text: fullResponse }]
   const savedMessages = finalMessages.slice(-20)
 
   let savedSessionId: string
@@ -93,8 +174,8 @@ export async function streamChatHandler(
       where: { id: session.id },
       data: {
         messages: savedMessages as any,
-        collectedFields: fields as any,
-        currentStep: (session.currentStep ?? 0) + 1,
+        collectedFields: collectedFields as any,
+        currentStep: step,
       },
     })
     savedSessionId = session.id
@@ -103,8 +184,8 @@ export async function streamChatHandler(
       data: {
         userId: user.id,
         messages: savedMessages as any,
-        collectedFields: fields as any,
-        currentStep: 1,
+        collectedFields: collectedFields as any,
+        currentStep: step,
       },
     })
     savedSessionId = newSession.id
@@ -114,7 +195,8 @@ export async function streamChatHandler(
   return reply.status(200).send({
     text: fullResponse,
     sessionId: savedSessionId,
-    done: true,
+    collectedFields,
+    done,
     ...(isError ? { error: fullResponse } : {}),
   })
 }

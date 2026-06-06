@@ -73,14 +73,10 @@ export default function Chat() {
         setChatMessages((m) => [...m, { from: 'ai', text: aiText }])
         if (data.sessionId) newSessionId = data.sessionId
         if (data.collectedFields) setCollectedFields(data.collectedFields)
-        if (data.done) {
-          if (newSessionId && newSessionId !== sessionId) setSessionId(newSessionId)
-          setStep((s) => {
-            const ns = Math.min(s + 1, STEPS.length - 1)
-            if (ns >= 3) setReady(true)
-            return ns
-          })
-        }
+        // Use step/done from API (set only when enough fields collected)
+        if (typeof data.step === 'number') setStep(Math.min(data.step, STEPS.length - 1))
+        if (data.done) setReady(true)
+        if (newSessionId && newSessionId !== sessionId) setSessionId(newSessionId)
       }
     } catch {
       setAiDown(true)
@@ -262,9 +258,14 @@ export default function Chat() {
               </span>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-quiet btn-sm" onClick={makeCard}>
-                  Пропустить диалог
+                  Заполнить вручную
                 </button>
-                <button className="btn btn-soft btn-sm" onClick={makeCard}>
+                <button
+                  className="btn btn-soft btn-sm"
+                  onClick={makeCard}
+                  disabled={!ready}
+                  title={!ready ? 'Ответьте на вопросы ИИ — карточка заполнится автоматически' : ''}
+                >
                   <Icon name="edit" size={15} />
                   Оформить карточку
                 </button>
