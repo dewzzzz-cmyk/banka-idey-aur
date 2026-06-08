@@ -19,6 +19,7 @@ async function main() {
         ? { level: 'info' }
         : { level: 'warn' },
     trustProxy: true,
+    bodyLimit: 1_048_576, // 1 MB — prevents oversized payload DoS
   })
 
   // Cookie (required by @fastify/session)

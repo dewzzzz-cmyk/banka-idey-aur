@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TRPCError } from '@trpc/server'
 import { router, protectedProcedure, curatorProcedure } from '../trpc.js'
 import { evaluateIdea } from '../ai/evaluate.js'
 
@@ -21,9 +22,21 @@ export const aiRouter = router({
 
   checkDuplicate: protectedProcedure
     .input(z.object({ text: z.string() }))
-    .query(async ({ ctx }) => {
+    .query(async ({ ctx, input }) => {
+      const term = input.text.trim()
       const ideas = await ctx.prisma.idea.findMany({
-        where: { status: { in: ['list', 'expert', 'work', 'done'] } },
+        where: {
+          status: { in: ['list', 'expert', 'work', 'done'] },
+          ...(term
+            ? {
+                OR: [
+                  { cardData: { path: ['title'],    string_contains: term } },
+                  { cardData: { path: ['problem'],  string_contains: term } },
+                  { cardData: { path: ['proposal'], string_contains: term } },
+                ],
+              }
+            : {}),
+        },
         select: { id: true, cardData: true },
         take: 5,
       })
@@ -37,7 +50,9 @@ export const aiRouter = router({
 
   requestEvaluation: curatorProcedure
     .input(z.object({ ideaId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      const idea = await ctx.prisma.idea.findUnique({ where: { id: input.ideaId } })
+      if (!idea) throw new TRPCError({ code: 'NOT_FOUND', message: 'Идея не найдена' })
       evaluateIdea(input.ideaId).catch((e) =>
         console.error('[AI eval] requestEvaluation failed for', input.ideaId, e?.message)
       )

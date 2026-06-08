@@ -16,6 +16,21 @@ const TEST_CREDENTIALS: Record<string, string> = {
   'sergey@can.ru':  'test123',
 }
 
+// In-memory rate limiter for login (max 10 per minute per IP)
+const _loginAttempts = new Map<string, { count: number; resetMs: number }>()
+function _checkLoginRate(ip: string): boolean {
+  const now = globalThis.Date.now()
+  const e = _loginAttempts.get(ip)
+  if (e && now < e.resetMs) {
+    if (e.count >= 10) return false
+    e.count++
+  } else {
+    if (_loginAttempts.size > 5000) for (const [k, v] of _loginAttempts) if (now >= v.resetMs) _loginAttempts.delete(k)
+    _loginAttempts.set(ip, { count: 1, resetMs: now + 60_000 })
+  }
+  return true
+}
+
 export async function registerAuth(app: FastifyInstance) {
   // Local strategy (fallback when no LDAP_URL)
   fastifyPassport.use(
@@ -46,7 +61,19 @@ export async function registerAuth(app: FastifyInstance) {
   // POST /api/auth/login
   app.post(
     '/api/auth/login',
-    { preValidation: fastifyPassport.authenticate('local', { session: true }) },
+    {
+      preValidation: [
+        async (req: any, reply: any) => {
+          if (!_checkLoginRate(req.ip ?? req.socket?.remoteAddress ?? 'unknown')) {
+            return reply.code(429).send({
+              statusCode: 429, error: 'Too Many Requests',
+              message: 'Слишком много попыток входа. Попробуйте через минуту.',
+            })
+          }
+        },
+        fastifyPassport.authenticate('local', { session: true }),
+      ],
+    },
     async (req, reply) => {
       const user = req.user as any
       return reply.send({
@@ -64,7 +91,7 @@ export async function registerAuth(app: FastifyInstance) {
 
   // POST /api/auth/logout
   app.post('/api/auth/logout', async (req, reply) => {
-    req.session.destroy()
+    await (req.session as any).destroy()
     return reply.send({ ok: true })
   })
 

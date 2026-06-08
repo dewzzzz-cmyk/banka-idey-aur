@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TRPCError } from '@trpc/server'
 import { router, protectedProcedure } from '../trpc.js'
 import { evaluateIdea } from '../ai/evaluate.js'
 import type { IdeaCardData, IdeaStatus, IdeaCategory, AiEvaluation } from '@portal/types'
@@ -6,14 +7,14 @@ import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
 
 const cardDataSchema = z.object({
-  title: z.string().default(''),
-  problem: z.string().default(''),
-  who: z.string().default(''),
-  proposal: z.string().default(''),
-  resources: z.string().default(''),
-  effect: z.string().default(''),
-  effectEstimate: z.string().default(''),
-  openQuestions: z.string().default(''),
+  title:          z.string().max(200).default(''),
+  problem:        z.string().max(5000).default(''),
+  who:            z.string().max(2000).default(''),
+  proposal:       z.string().max(5000).default(''),
+  resources:      z.string().max(2000).default(''),
+  effect:         z.string().max(2000).default(''),
+  effectEstimate: z.string().max(500).default(''),
+  openQuestions:  z.string().max(2000).default(''),
 })
 
 export const ideaRouter = router({
@@ -34,9 +35,52 @@ export const ideaRouter = router({
       if (input.category) where.category = input.category
       if (input.mine) where.authorId = ctx.user.id
 
-      const canSeeAnon = ctx.user.roles.some((r: string) =>
+      const isPrivileged = ctx.user.roles.some((r: string) =>
         ['curator', 'admin', 'owner', 'committee'].includes(r)
       )
+      const canSeeAnon = isPrivileged
+
+      const andClauses: any[] = []
+
+      // Draft visibility: non-privileged users only see their own drafts
+      if (!isPrivileged) {
+        if (input.status === 'draft') {
+          // Explicitly requesting drafts: only own drafts
+          where.authorId = ctx.user.id
+        } else if (!input.status && !input.mine) {
+          // General listing: exclude other users' drafts
+          andClauses.push({
+            OR: [
+              { status: { not: 'draft' } },
+              { status: 'draft', authorId: ctx.user.id },
+            ],
+          })
+        }
+      }
+
+      // Confidential ideas: only visible to author or privileged roles
+      if (!isPrivileged && !input.mine) {
+        andClauses.push({
+          OR: [
+            { isConfidential: false },
+            { isConfidential: true, authorId: ctx.user.id },
+          ],
+        })
+      }
+
+      // Search across cardData JSON fields (case-sensitive, Prisma JSON path filter)
+      if (input.search?.trim()) {
+        const term = input.search.trim()
+        andClauses.push({
+          OR: [
+            { cardData: { path: ['title'],    string_contains: term } },
+            { cardData: { path: ['problem'],  string_contains: term } },
+            { cardData: { path: ['proposal'], string_contains: term } },
+          ],
+        })
+      }
+
+      if (andClauses.length > 0) where.AND = andClauses
 
       const [ideas, total] = await Promise.all([
         ctx.prisma.idea.findMany({
@@ -62,26 +106,30 @@ export const ideaRouter = router({
       ])
 
       return {
-        items: ideas.map((i) => ({
-          id: i.id,
-          status: i.status as IdeaStatus,
-          category: i.category as IdeaCategory,
-          cardData: i.cardData as unknown as IdeaCardData,
-          isConfidential: i.isConfidential,
-          isAnonymous: i.isAnonymous,
-          authorId: i.isAnonymous && !canSeeAnon ? 'anonymous' : i.authorId,
-          authorName: i.isAnonymous && !canSeeAnon ? 'Аноним' : i.author.name,
-          authorDept: i.isAnonymous && !canSeeAnon ? '' : i.author.dept,
-          votes: i._count.votes,
-          votedByMe: i.votes.length > 0,
-          comments: i._count.comments,
-          views: i.viewCount,
-          createdAt: i.createdAt.toISOString(),
-          assigneeName: (i.implementation as any)?.assignee?.name ?? undefined,
-          dueDate: (i.implementation as any)?.dueDate?.toISOString() ?? undefined,
-          effectFact: (i.implementation as any)?.effectFact ?? undefined,
-          aiEvaluation: (i.aiEvaluation as AiEvaluation | null) ?? undefined,
-        })),
+        items: ideas.map((i) => {
+          // Author anonymization: hide identity unless privileged OR own idea
+          const hideAuthor = i.isAnonymous && !canSeeAnon && i.authorId !== ctx.user.id
+          return {
+            id: i.id,
+            status: i.status as IdeaStatus,
+            category: i.category as IdeaCategory,
+            cardData: i.cardData as unknown as IdeaCardData,
+            isConfidential: i.isConfidential,
+            isAnonymous: i.isAnonymous,
+            authorId:   hideAuthor ? 'anonymous' : i.authorId,
+            authorName: hideAuthor ? 'Аноним'    : i.author.name,
+            authorDept: hideAuthor ? ''           : i.author.dept,
+            votes: i._count.votes,
+            votedByMe: i.votes.length > 0,
+            comments: i._count.comments,
+            views: i.viewCount,
+            createdAt: i.createdAt.toISOString(),
+            assigneeName: (i.implementation as any)?.assignee?.name ?? undefined,
+            dueDate: (i.implementation as any)?.dueDate?.toISOString() ?? undefined,
+            effectFact: (i.implementation as any)?.effectFact ?? undefined,
+            aiEvaluation: (i.aiEvaluation as AiEvaluation | null) ?? undefined,
+          }
+        }),
         total,
       }
     }),
@@ -89,7 +137,7 @@ export const ideaRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const idea = await ctx.prisma.idea.findUniqueOrThrow({
+      const idea = await ctx.prisma.idea.findUnique({
         where: { id: input.id },
         include: {
           author: { select: { name: true, dept: true } },
@@ -103,6 +151,7 @@ export const ideaRouter = router({
           },
         },
       })
+      if (!idea) throw new TRPCError({ code: 'NOT_FOUND', message: 'Идея не найдена' })
       await ctx.prisma.idea.update({
         where: { id: input.id },
         data: { viewCount: { increment: 1 } },
@@ -142,9 +191,13 @@ export const ideaRouter = router({
   submit: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const idea = await ctx.prisma.idea.findUniqueOrThrow({
-        where: { id: input.id, authorId: ctx.user.id },
+      const idea = await ctx.prisma.idea.findUnique({
+        where: { id: input.id },
       })
+      if (!idea) throw new TRPCError({ code: 'NOT_FOUND', message: 'Идея не найдена' })
+      if (idea.authorId !== ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Нет доступа к этой идее' })
+      }
       const updated = await ctx.prisma.idea.update({
         where: { id: input.id },
         data: { status: 'mod' },
@@ -175,6 +228,16 @@ export const ideaRouter = router({
   vote: protectedProcedure
     .input(z.object({ ideaId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      // Self-vote guard: look up the idea author before allowing the vote
+      const targetIdea = await ctx.prisma.idea.findUnique({
+        where: { id: input.ideaId },
+        select: { authorId: true },
+      })
+      if (!targetIdea) throw new TRPCError({ code: 'NOT_FOUND', message: 'Идея не найдена' })
+      if (targetIdea.authorId === ctx.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Нельзя голосовать за собственную идею' })
+      }
+
       try {
         await ctx.prisma.vote.create({
           data: { userId: ctx.user.id, ideaId: input.ideaId },
@@ -182,16 +245,10 @@ export const ideaRouter = router({
       } catch {
         // Ignore duplicate vote (unique constraint)
       }
-      // Award 5 points to idea author when someone votes
-      const votedIdea = await ctx.prisma.idea.findUnique({
-        where: { id: input.ideaId },
-        select: { authorId: true },
-      })
-      if (votedIdea && votedIdea.authorId !== ctx.user.id) {
-        await ctx.prisma.pointLedger.create({
-          data: { userId: votedIdea.authorId, delta: 5, reason: 'idea_voted', refIdeaId: input.ideaId },
-        }).catch(() => {})
-      }
+      // Award 5 points to idea author
+      await ctx.prisma.pointLedger.create({
+        data: { userId: targetIdea.authorId, delta: 5, reason: 'idea_voted', refIdeaId: input.ideaId },
+      }).catch(() => {})
       return { ok: true }
     }),
 

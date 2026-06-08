@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { TRPCError } from '@trpc/server'
 import { router, curatorProcedure } from '../trpc.js'
 import { evaluateIdea } from '../ai/evaluate.js'
 import { MODERATED_STATUSES } from '@portal/types'
@@ -9,14 +10,15 @@ export const moderationRouter = router({
     .input(
       z.object({
         ideaId: z.string(),
-        status: z.string(),
+        status: z.enum(['draft','mod','rework','list','expert','work','done','reject','duplicate','archive']),
         comment: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const idea = await ctx.prisma.idea.findUniqueOrThrow({
+      const idea = await ctx.prisma.idea.findUnique({
         where: { id: input.ideaId },
       })
+      if (!idea) throw new TRPCError({ code: 'NOT_FOUND', message: 'Идея не найдена' })
       const updated = await ctx.prisma.idea.update({
         where: { id: input.ideaId },
         data: { status: input.status },
@@ -101,9 +103,10 @@ export const moderationRouter = router({
   linkDuplicate: curatorProcedure
     .input(z.object({ ideaId: z.string(), originalIdeaId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.prisma.idea.findUniqueOrThrow({
+      const existing = await ctx.prisma.idea.findUnique({
         where: { id: input.ideaId },
       })
+      if (!existing) throw new TRPCError({ code: 'NOT_FOUND', message: 'Идея не найдена' })
       const updated = await ctx.prisma.idea.update({
         where: { id: input.ideaId },
         data: { status: 'duplicate' },
@@ -118,5 +121,15 @@ export const moderationRouter = router({
         },
       })
       return updated
+    }),
+
+  listUsers: curatorProcedure
+    .input(z.object({ role: z.string().optional() }))
+    .query(async ({ ctx, input }) => {
+      return ctx.prisma.user.findMany({
+        where: input.role ? { roles: { has: input.role } } : undefined,
+        select: { id: true, name: true, email: true, roles: true, dept: true },
+        orderBy: { name: 'asc' },
+      })
     }),
 })
