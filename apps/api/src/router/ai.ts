@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { router, protectedProcedure } from '../trpc.js'
+import { router, protectedProcedure, curatorProcedure } from '../trpc.js'
+import { evaluateIdea } from '../ai/evaluate.js'
 
 export const aiRouter = router({
   // Streaming happens via POST /api/ai/stream (SSE, not tRPC)
@@ -32,5 +33,11 @@ export const aiRouter = router({
           title: (i.cardData as any).title ?? '',
         })),
       }
+    }),
+
+  requestEvaluation: curatorProcedure
+    .input(z.object({ ideaId: z.string() }))
+    .mutation(async ({ input }) => {
+      return evaluateIdea(input.ideaId)
     }),
 })

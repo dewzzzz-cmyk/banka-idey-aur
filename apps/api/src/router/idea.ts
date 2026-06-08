@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc.js'
+import { evaluateIdea } from '../ai/evaluate.js'
 import type { IdeaCardData, IdeaStatus, IdeaCategory } from '@portal/types'
 import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
@@ -163,6 +164,10 @@ export const ideaRouter = router({
           refIdeaId: input.id,
         },
       })
+      // fire-and-forget — does not block the response
+      evaluateIdea(input.id).catch((e) =>
+        console.error('[AI eval] Failed for', input.id, e?.message)
+      )
       return updated
     }),
 

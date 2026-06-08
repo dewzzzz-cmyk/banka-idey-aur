@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { router, curatorProcedure } from '../trpc.js'
+import { evaluateIdea } from '../ai/evaluate.js'
 import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
 
@@ -51,6 +52,12 @@ export const moderationRouter = router({
       })
       if (MODERATED_STATUSES.includes(input.status as any)) {
         await enqueueReindex(input.ideaId)
+      }
+      // Re-evaluate when idea returns to moderation queue
+      if (input.status === 'mod') {
+        evaluateIdea(input.ideaId).catch((e) =>
+          console.error('[AI eval] Failed for', input.ideaId, e?.message)
+        )
       }
       return updated
     }),
