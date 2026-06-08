@@ -113,6 +113,89 @@ async function main() {
       .send(buf)
   })
 
+  // Analytics XLSX export
+  app.get('/api/export/analytics', async (req, reply) => {
+    if (!req.user) return reply.status(401).send()
+    const query = req.query as Record<string, string>
+    const period = (['quarter', 'half', 'year'] as const).includes(query.period as any)
+      ? (query.period as 'quarter' | 'half' | 'year')
+      : 'year'
+    const months = period === 'quarter' ? 3 : period === 'half' ? 6 : 12
+    const since = new Date(); since.setMonth(since.getMonth() - months)
+
+    const STATUS_LABELS: Record<string, string> = {
+      draft: 'Черновики', mod: 'На модерации', rework: 'На доработке',
+      list: 'В общем списке', expert: 'На экспертизе', work: 'Взято в работу', done: 'Реализовано',
+    }
+    const periodLabel = period === 'quarter' ? 'Квартал' : period === 'half' ? 'Полугодие' : 'Год'
+
+    const [totalIdeas, inWork, done, authorGroups, funnelCounts, topIdeas] = await Promise.all([
+      prisma.idea.count({ where: { createdAt: { gte: since } } }),
+      prisma.idea.count({ where: { status: 'work' } }),
+      prisma.idea.count({ where: { status: 'done', updatedAt: { gte: since } } }),
+      prisma.idea.groupBy({ by: ['authorId'], where: { createdAt: { gte: since } } }),
+      Promise.all(
+        (['draft','mod','rework','list','expert','work','done'] as const).map((s) =>
+          prisma.idea.count({ where: { status: s, createdAt: { gte: since } } })
+        )
+      ),
+      prisma.idea.findMany({
+        where: { status: { in: ['list','expert','work','done'] }, createdAt: { gte: since } },
+        include: { author: { select: { name: true, dept: true } }, _count: { select: { votes: true } } },
+        orderBy: { votes: { _count: 'desc' } },
+        take: 20,
+      }),
+    ])
+
+    const ExcelJS = await import('exceljs')
+    const wb = new ExcelJS.Workbook()
+    wb.creator = 'Банка Идей · АУР'
+
+    // Sheet 1: KPI summary
+    const ws1 = wb.addWorksheet('Сводка KPI')
+    ws1.columns = [{ header: 'Показатель', key: 'k', width: 35 }, { header: 'Значение', key: 'v', width: 20 }]
+    ws1.addRow({ k: 'Период', v: periodLabel })
+    ws1.addRow({ k: 'Идей подано', v: totalIdeas })
+    ws1.addRow({ k: 'В работе (активные)', v: inWork })
+    ws1.addRow({ k: 'Реализовано за период', v: done })
+    ws1.addRow({ k: 'Уникальных авторов', v: authorGroups.length })
+    if (totalIdeas > 0) ws1.addRow({ k: 'Конверсия в реализацию', v: `${Math.round((done / totalIdeas) * 100)}%` })
+
+    // Sheet 2: Funnel
+    const ws2 = wb.addWorksheet('Воронка по статусам')
+    ws2.columns = [{ header: 'Статус', key: 'status', width: 25 }, { header: 'Количество', key: 'count', width: 15 }]
+    const funnelStatuses = ['draft','mod','rework','list','expert','work','done'] as const
+    funnelStatuses.forEach((s, i) => ws2.addRow({ status: STATUS_LABELS[s] ?? s, count: funnelCounts[i] }))
+
+    // Sheet 3: Top ideas
+    const ws3 = wb.addWorksheet('Топ идей')
+    ws3.columns = [
+      { header: '№', key: 'rank', width: 6 },
+      { header: 'Название', key: 'title', width: 50 },
+      { header: 'Автор', key: 'author', width: 25 },
+      { header: 'Отдел', key: 'dept', width: 25 },
+      { header: 'Голосов', key: 'votes', width: 12 },
+      { header: 'Статус', key: 'status', width: 20 },
+    ]
+    topIdeas.forEach((idea, i) => {
+      ws3.addRow({
+        rank: i + 1,
+        title: (idea.cardData as any).title ?? '',
+        author: idea.isAnonymous ? 'Аноним' : idea.author.name,
+        dept: idea.isAnonymous ? '' : idea.author.dept,
+        votes: idea._count.votes,
+        status: STATUS_LABELS[idea.status] ?? idea.status,
+      })
+    })
+
+    const buf = await wb.xlsx.writeBuffer()
+    const filename = `analytics-${period}-${new Date().toISOString().slice(0,10)}.xlsx`
+    return reply
+      .header('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .send(buf)
+  })
+
   // Health check
   app.get('/health', async () => {
     await prisma.$queryRaw`SELECT 1`

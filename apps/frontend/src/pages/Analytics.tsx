@@ -49,7 +49,7 @@ export default function Analytics() {
   const topAuthors = ratings?.slice(0, 5) ?? []
 
   const handleExport = () => {
-    window.location.href = '/api/export/analytics'
+    window.location.href = `/api/export/analytics?period=${period}`
   }
 
   return (
