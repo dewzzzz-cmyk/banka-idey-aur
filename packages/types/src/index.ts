@@ -64,6 +64,7 @@ export interface IdeaListItem {
   assigneeName?: string
   dueDate?: string
   effectFact?: string
+  aiEvaluation?: AiEvaluation
 }
 
 export interface User {
@@ -92,6 +93,15 @@ export interface AiCollectedFields {
   resources?: string
   effect?: string
   effectEstimate?: string
+}
+
+export interface AiEvaluation {
+  impact:      number   // Потенциал влияния, 1–10
+  feasibility: number   // Реализуемость, 1–10
+  clarity:     number   // Проработанность описания, 1–10
+  overall:     number   // Взвешенное среднее (impact×0.4 + feasibility×0.35 + clarity×0.25)
+  summary:     string   // 2–3 предложения от ИИ на русском
+  createdAt:   string   // ISO 8601
 }
 
 export interface AiMessage {
