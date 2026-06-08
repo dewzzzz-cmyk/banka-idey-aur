@@ -4,6 +4,8 @@ import { CatChip } from '@/components/ui/CatChip'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { Avatar } from '@/components/ui/Avatar'
 import { Icon } from '@/components/ui/Icon'
+import { AiScoreBadge } from '@/components/ui/AiScoreBadge'
+import { AiEvalPanel } from '@/components/ui/AiEvalPanel'
 import type { IdeaListItem } from '@portal/types'
 
 type Modal = 'reject' | 'rework' | 'assign' | null
@@ -25,6 +27,13 @@ export default function Curator() {
     },
   })
   const addNote = trpc.moderation.addInternalNote.useMutation()
+
+  const requestEval = trpc.ai.requestEvaluation.useMutation({
+    onSuccess: () => {
+      utils.idea.list.invalidate()
+      if (sel) utils.idea.getById.invalidate({ id: sel.id })
+    },
+  })
 
   const queue: IdeaListItem[] = [
     ...(modData?.items ?? []),
@@ -138,6 +147,7 @@ export default function Curator() {
                         {resolved[idea.id]}
                       </span>
                     )}
+                    <AiScoreBadge score={idea.aiEvaluation?.overall} />
                   </div>
                   <div className="queue-title">{idea.cardData.title || 'Без названия'}</div>
                   <div className="queue-foot">
@@ -199,6 +209,12 @@ export default function Curator() {
                   ) : null,
                 )}
               </div>
+
+              <AiEvalPanel
+                evaluation={sel.aiEvaluation}
+                isLoading={requestEval.isPending}
+                onRefresh={() => requestEval.mutate({ ideaId: sel.id })}
+              />
 
               <div className="cur-internal">
                 <span className="cur-field-l">
