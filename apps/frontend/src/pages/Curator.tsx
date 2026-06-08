@@ -6,7 +6,7 @@ import { Avatar } from '@/components/ui/Avatar'
 import { Icon } from '@/components/ui/Icon'
 import { AiScoreBadge } from '@/components/ui/AiScoreBadge'
 import { AiEvalPanel } from '@/components/ui/AiEvalPanel'
-import type { IdeaListItem } from '@portal/types'
+import type { IdeaListItem, IdeaStatus } from '@portal/types'
 
 type Modal = 'reject' | 'rework' | 'assign' | null
 
@@ -14,7 +14,7 @@ export default function Curator() {
   const utils = trpc.useUtils()
   const { data: modData, isLoading } = trpc.idea.list.useQuery({ status: 'mod', limit: 50 })
   const { data: expertData } = trpc.idea.list.useQuery({ status: 'expert', limit: 50 })
-  const { data: usersData } = trpc.admin.manageUsers.useQuery()
+  const { data: usersData } = trpc.moderation.listUsers.useQuery({})
 
   const setStatus = trpc.moderation.setStatus.useMutation({
     onSuccess: () => {
@@ -51,7 +51,7 @@ export default function Curator() {
   const sel = selId ? queue.find((i) => i.id === selId) : queue[0]
   const selIdReal = sel?.id
 
-  const act = async (ideaId: string, status: string, label: string, comment?: string) => {
+  const act = async (ideaId: string, status: IdeaStatus, label: string, comment?: string) => {
     await setStatus.mutateAsync({ ideaId, status, comment })
     setResolved((r) => ({ ...r, [ideaId]: label }))
     setModal(null)
