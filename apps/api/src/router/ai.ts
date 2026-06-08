@@ -43,16 +43,4 @@ export const aiRouter = router({
       )
       return { queued: true }
     }),
-
-  // Temporary debug endpoint — synchronously evaluates and returns result or error
-  debugEval: curatorProcedure
-    .input(z.object({ ideaId: z.string() }))
-    .mutation(async ({ input }) => {
-      try {
-        const result = await evaluateIdea(input.ideaId)
-        return { ok: true, overall: result.overall, summary: result.summary.slice(0, 100) }
-      } catch (e: any) {
-        return { ok: false, error: String(e?.message ?? e).slice(0, 300) }
-      }
-    }),
 })
