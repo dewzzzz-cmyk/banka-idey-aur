@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc.js'
 import { evaluateIdea } from '../ai/evaluate.js'
-import type { IdeaCardData, IdeaStatus, IdeaCategory } from '@portal/types'
+import type { IdeaCardData, IdeaStatus, IdeaCategory, AiEvaluation } from '@portal/types'
 import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
 
@@ -80,6 +80,7 @@ export const ideaRouter = router({
           assigneeName: (i.implementation as any)?.assignee?.name ?? undefined,
           dueDate: (i.implementation as any)?.dueDate?.toISOString() ?? undefined,
           effectFact: (i.implementation as any)?.effectFact ?? undefined,
+          aiEvaluation: (i.aiEvaluation as AiEvaluation | null) ?? undefined,
         })),
         total,
       }
@@ -106,7 +107,7 @@ export const ideaRouter = router({
         where: { id: input.id },
         data: { viewCount: { increment: 1 } },
       })
-      return { ...idea, votedByMe: idea.votes.length > 0 }
+      return { ...idea, votedByMe: idea.votes.length > 0, aiEvaluation: idea.aiEvaluation as AiEvaluation | null | undefined }
     }),
 
   saveDraft: protectedProcedure
