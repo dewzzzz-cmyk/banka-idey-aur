@@ -77,7 +77,7 @@ export interface AiEvaluation {
 6. Сохранить результат в `idea.aiEvaluation` через `prisma.idea.update`
 7. Вернуть `AiEvaluation`
 
-**Zod-схема:**
+**Zod-схема** (без `overall` и `createdAt` — они вычисляются в коде):
 
 ```typescript
 const IdeaEvalSchema = z.object({
@@ -88,33 +88,65 @@ const IdeaEvalSchema = z.object({
 })
 ```
 
+После получения ответа от модели, `evaluateIdea` собирает полный объект явно:
+
+```typescript
+const evaluation: AiEvaluation = {
+  ...result.object,
+  overall: parseFloat(
+    (result.object.impact * 0.4 + result.object.feasibility * 0.35 + result.object.clarity * 0.25).toFixed(1)
+  ),
+  createdAt: new Date().toISOString(),
+}
+await prisma.idea.update({ where: { id: ideaId }, data: { aiEvaluation: evaluation as any } })
+return evaluation
+```
+
+Вызов `generateObject` должен включать таймаут: `abortSignal: AbortSignal.timeout(25_000)`.
+
 **Системный промпт:** инструктирует модель оценивать по трём осям:
 - *impact* — насколько широко затронута проблема, каков бизнес-эффект
 - *feasibility* — реалистичность реализации при типичных корпоративных ресурсах
 - *clarity* — полнота и конкретность описания (заполнены ли ключевые поля, есть ли цифры)
 
-### 4.2 Триггер в `apps/api/src/router/moderation.ts`
+### 4.2 Триггеры запуска оценки
 
-В процедуре `setStatus`, после успешного `prisma.idea.update`, если `status === 'mod'`:
+Оценка должна запускаться из **двух мест** — обе точки, где идея переходит в статус `mod`:
 
+**`apps/api/src/router/idea.ts` — процедура `submit`** (основной триггер: автор подаёт идею):
 ```typescript
-// fire-and-forget — не блокируем ответ куратору/автору
-evaluateIdea(ideaId).catch((e) =>
-  console.error('[AI eval] Failed for', ideaId, e?.message)
+// После prisma.idea.update({ data: { status: 'mod' } })
+evaluateIdea(newIdea.id).catch((e) =>
+  console.error('[AI eval] Failed for', newIdea.id, e?.message)
 )
 ```
+
+**`apps/api/src/router/moderation.ts` — процедура `setStatus`** (триггер для ручного возврата в `mod`):
+```typescript
+// После успешного prisma.idea.update, если input.status === 'mod'
+if (input.status === 'mod') {
+  evaluateIdea(input.ideaId).catch((e) =>
+    console.error('[AI eval] Failed for', input.ideaId, e?.message)
+  )
+}
+```
+
+Оба вызова — fire-and-forget, не блокируют ответ API.
 
 ### 4.3 Новая tRPC процедура `ai.requestEvaluation`
 
 - **Путь:** `ai.requestEvaluation`
 - **Input:** `z.object({ ideaId: z.string() })`
-- **Auth:** роль `curator`, `admin` или `owner`
-- **Действие:** вызывает `evaluateIdea(ideaId)`, возвращает `AiEvaluation`
+- **Auth:** использовать существующий `curatorProcedure` — он уже покрывает роли `curator`, `committee`, `admin`, `owner`
+- **Действие:** вызывает `await evaluateIdea(ideaId)` (синхронно, с таймаутом), возвращает `AiEvaluation`
+- **Таймаут:** см. секцию 4.1 — `generateObject` должен иметь `abortSignal: AbortSignal.timeout(25_000)`
 - **Используется:** кнопка «Переоценить» в панели куратора
 
 ### 4.4 Включение `aiEvaluation` в ответы
 
-В `apps/api/src/router/idea.ts` — маппер идеи в `IdeaListItem` должен включать `aiEvaluation` из БД.
+**`idea.list` маппер:** добавить `aiEvaluation: idea.aiEvaluation as AiEvaluation | null` в объект `IdeaListItem`.
+
+**`idea.getById`:** поле появится автоматически через `{ ...idea, ... }`, но нужно явно добавить в TypeScript-аннотацию возвращаемого типа, чтобы `Card.tsx` увидел поле без ошибки компилятора.
 
 ---
 
@@ -140,7 +172,7 @@ Props: `evaluation: AiEvaluation | null | undefined`, `onRefresh?: () => void`, 
 - Три строки с прогресс-баром: «Потенциал влияния», «Реализуемость», «Проработанность»
 - Текст `summary`
 - Если `isLoading` — скелетон вместо содержимого
-- Если `evaluation === null` — текст «Оценка ещё не готова»
+- Если `evaluation == null` (loose equality — покрывает и `null`, и `undefined`) — текст «Оценка ещё не готова»
 
 ### 5.3 Изменения в `Curator.tsx`
 
@@ -156,14 +188,22 @@ Props: `evaluation: AiEvaluation | null | undefined`, `onRefresh?: () => void`, 
 />
 ```
 
-Мутация: `trpc.ai.requestEvaluation.useMutation({ onSuccess: () => utils.idea.list.invalidate() })`.
+Мутация:
+```typescript
+trpc.ai.requestEvaluation.useMutation({
+  onSuccess: () => {
+    utils.idea.list.invalidate()
+    utils.idea.getById.invalidate({ id: sel.id }) // обновить детальную панель
+  }
+})
+```
 
 ### 5.4 Изменения в `Card.tsx`
 
-После блока полей карточки, если `idea.status` входит в `MODERATED_STATUSES` (или `mod`):
+После блока полей карточки. Условие показа — идея прошла через оценку: `idea.status !== 'draft'` (любой статус кроме черновика). **Не использовать `MODERATED_STATUSES`** — он не включает `'mod'`, и автор не увидит оценку сразу после подачи.
 
 ```tsx
-{showEval && (
+{idea.status !== 'draft' && (
   <AiEvalPanel evaluation={idea.aiEvaluation} />
 )}
 ```
