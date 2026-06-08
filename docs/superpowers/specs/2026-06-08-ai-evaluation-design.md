@@ -116,8 +116,8 @@ return evaluation
 **`apps/api/src/router/idea.ts` — процедура `submit`** (основной триггер: автор подаёт идею):
 ```typescript
 // После prisma.idea.update({ data: { status: 'mod' } })
-evaluateIdea(newIdea.id).catch((e) =>
-  console.error('[AI eval] Failed for', newIdea.id, e?.message)
+evaluateIdea(input.id).catch((e) =>
+  console.error('[AI eval] Failed for', input.id, e?.message)
 )
 ```
 
