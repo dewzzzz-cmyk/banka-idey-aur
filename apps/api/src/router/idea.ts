@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc.js'
-import type { IdeaCardData } from '@portal/types'
+import { evaluateIdea } from '../ai/evaluate.js'
+import type { IdeaCardData, IdeaStatus, IdeaCategory, AiEvaluation } from '@portal/types'
 import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
 
@@ -63,8 +64,8 @@ export const ideaRouter = router({
       return {
         items: ideas.map((i) => ({
           id: i.id,
-          status: i.status,
-          category: i.category,
+          status: i.status as IdeaStatus,
+          category: i.category as IdeaCategory,
           cardData: i.cardData as unknown as IdeaCardData,
           isConfidential: i.isConfidential,
           isAnonymous: i.isAnonymous,
@@ -79,6 +80,7 @@ export const ideaRouter = router({
           assigneeName: (i.implementation as any)?.assignee?.name ?? undefined,
           dueDate: (i.implementation as any)?.dueDate?.toISOString() ?? undefined,
           effectFact: (i.implementation as any)?.effectFact ?? undefined,
+          aiEvaluation: (i.aiEvaluation as AiEvaluation | null) ?? undefined,
         })),
         total,
       }
@@ -105,7 +107,7 @@ export const ideaRouter = router({
         where: { id: input.id },
         data: { viewCount: { increment: 1 } },
       })
-      return { ...idea, votedByMe: idea.votes.length > 0 }
+      return { ...idea, votedByMe: idea.votes.length > 0, aiEvaluation: idea.aiEvaluation as AiEvaluation | null | undefined }
     }),
 
   saveDraft: protectedProcedure
@@ -163,6 +165,10 @@ export const ideaRouter = router({
           refIdeaId: input.id,
         },
       })
+      // fire-and-forget — does not block the response
+      evaluateIdea(input.id).catch((e) =>
+        console.error('[AI eval] Failed for', input.id, e?.message)
+      )
       return updated
     }),
 

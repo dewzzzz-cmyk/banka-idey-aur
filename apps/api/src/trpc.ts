@@ -17,7 +17,7 @@ export async function createContext({
   req: FastifyRequest
   res: FastifyReply
 }): Promise<Context> {
-  const user = (req.user as User | null) ?? null
+  const user = ((req as any).user as User | null) ?? null
   // Re-check is_active on every request
   if (user && !user.isActive) {
     return { req, res, user: null, prisma }

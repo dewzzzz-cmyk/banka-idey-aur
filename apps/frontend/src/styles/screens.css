@@ -485,3 +485,26 @@
   .tabs::-webkit-scrollbar { display: none; }
   .tab { flex-shrink: 0; padding: 8px 14px; font-size: 13px; }
 }
+
+/* ─── AI Evaluation ──────────────────────────────────── */
+.ai-score-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 20px; line-height: 1.5; }
+.ai-score-badge.green  { background: var(--st-done-b);   color: var(--st-done-t); }
+.ai-score-badge.yellow { background: var(--st-rework-b); color: var(--st-rework-t); }
+.ai-score-badge.red    { background: var(--st-reject-b); color: var(--st-reject-t); }
+
+.ai-eval-panel { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); }
+.ai-eval-head  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.ai-eval-bars  { display: flex; flex-direction: column; gap: 9px; margin-bottom: 14px; }
+.ai-eval-row   { display: grid; grid-template-columns: 140px 1fr 44px; align-items: center; gap: 10px; }
+.ai-eval-label { font-size: 13px; color: var(--ink-2); }
+.ai-eval-bar-wrap { background: var(--line); border-radius: 4px; height: 7px; overflow: hidden; }
+.ai-eval-bar-fill { background: var(--accent); height: 100%; border-radius: 4px; transition: width .4s ease; }
+.ai-eval-score { font-size: 12px; font-weight: 700; color: var(--ink); text-align: right; }
+.ai-eval-summary { font-size: 13.5px; line-height: 1.6; color: var(--ink-2); margin: 0 0 10px; font-style: italic; }
+.ai-eval-overall { font-size: 12.5px; color: var(--faint); }
+.ai-eval-overall b { color: var(--ink); }
+.ai-eval-empty { font-size: 13px; color: var(--faint); margin: 0; }
+.ai-eval-skeleton { display: flex; flex-direction: column; }
+
+/* Score badge in queue list */
+.queue-top .ai-score-badge { margin-left: auto; }

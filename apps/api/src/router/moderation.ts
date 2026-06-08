@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { router, curatorProcedure } from '../trpc.js'
+import { evaluateIdea } from '../ai/evaluate.js'
 import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
 
@@ -52,6 +53,12 @@ export const moderationRouter = router({
       if (MODERATED_STATUSES.includes(input.status as any)) {
         await enqueueReindex(input.ideaId)
       }
+      // Re-evaluate when idea returns to moderation queue
+      if (input.status === 'mod') {
+        evaluateIdea(input.ideaId).catch((e) =>
+          console.error('[AI eval] Failed for', input.ideaId, e?.message)
+        )
+      }
       return updated
     }),
 
@@ -94,6 +101,9 @@ export const moderationRouter = router({
   linkDuplicate: curatorProcedure
     .input(z.object({ ideaId: z.string(), originalIdeaId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.prisma.idea.findUniqueOrThrow({
+        where: { id: input.ideaId },
+      })
       const updated = await ctx.prisma.idea.update({
         where: { id: input.ideaId },
         data: { status: 'duplicate' },
@@ -101,7 +111,7 @@ export const moderationRouter = router({
       await ctx.prisma.ideaStatusLog.create({
         data: {
           ideaId: input.ideaId,
-          fromStatus: updated.status,
+          fromStatus: existing.status,
           toStatus: 'duplicate',
           actorId: ctx.user.id,
           comment: `Дубликат идеи ${input.originalIdeaId}`,

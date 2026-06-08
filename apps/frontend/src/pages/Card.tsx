@@ -6,6 +6,7 @@ import { Icon } from '@/components/ui/Icon'
 import { CatChip } from '@/components/ui/CatChip'
 import { Avatar } from '@/components/ui/Avatar'
 import { StatusBadge } from '@/components/ui/StatusBadge'
+import { AiEvalPanel } from '@/components/ui/AiEvalPanel'
 import type { IdeaCategory } from '@portal/types'
 
 interface FormState {
@@ -121,7 +122,7 @@ export default function Card() {
   // Populate from loaded idea
   useEffect(() => {
     if (ideaData) {
-      const cd = ideaData.cardData as any
+      const cd = (ideaData as any).cardData
       setF({
         title: cd.title ?? '',
         problem: cd.problem ?? '',
@@ -258,6 +259,12 @@ export default function Card() {
               </div>
             ))}
           </div>
+
+          {(ideaData as any)?.status !== 'draft' && (
+            <div className="card-fields" style={{ paddingTop: 0 }}>
+              <AiEvalPanel evaluation={(ideaData as any)?.aiEvaluation} />
+            </div>
+          )}
         </main>
 
         {/* Sidebar */}
