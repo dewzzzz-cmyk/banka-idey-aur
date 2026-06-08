@@ -124,7 +124,13 @@ export async function streamChatHandler(req: FastifyRequest, reply: FastifyReply
 как получаешь информацию — даже черновым вариантом. Если пользователь упомянул проблему,
 запиши её в поле "problem", даже если будешь уточнять детали. Если упомянул предложение —
 запиши в "proposal". НЕ оставляй поля пустыми если информация уже есть в диалоге.
-done=true ТОЛЬКО когда поля problem, proposal и effect реально заполнены в JSON (не пустые).`,
+done=true ТОЛЬКО когда поля problem, proposal и effect реально заполнены в JSON (не пустые).
+
+КАЧЕСТВО ОТВЕТОВ: Если ответ пользователя на ключевой вопрос слишком короткий (менее 10 слов)
+или расплывчатый — уточни конкретику прежде чем записывать поле.
+Не принимай ответы типа "да", "нет", "лучше станет", "не знаю" как достаточные для заполнения поля.
+Примеры недостаточных ответов на вопрос об эффекте: "будет лучше", "сэкономим время", "польза будет".
+В таких случаях спроси: "Можете оценить конкретнее — например, на сколько % или часов в день?"`,
   ]
     .filter(Boolean)
     .join('')
@@ -162,14 +168,15 @@ done=true ТОЛЬКО когда поля problem, proposal и effect реал�
       effectEstimate: obj.effectEstimate || previousFields.effectEstimate,
     }
 
-    // Safeguard: done=true only when all 3 required fields are actually populated in collectedFields.
-    // DeepSeek sometimes sets done=true before populating the structured fields — this prevents
-    // an empty card from being shown to the user prematurely.
-    const hasRequiredFields = !!(
-      collectedFields.problem?.trim() &&
-      collectedFields.proposal?.trim() &&
-      collectedFields.effect?.trim()
-    )
+    // Safeguard: done=true only when all 3 required fields are actually populated in collectedFields
+    // AND each field has meaningful content (>= 20 characters).
+    // DeepSeek sometimes sets done=true before populating the structured fields, or accepts vague
+    // one-word answers — both checks together prevent a low-quality card from being shown prematurely.
+    const minLen = (s?: string, n = 20) => (s?.trim().length ?? 0) >= n
+    const hasRequiredFields =
+      minLen(collectedFields.problem) &&
+      minLen(collectedFields.proposal) &&
+      minLen(collectedFields.effect)
     done = (obj.done ?? false) && hasRequiredFields
     step = obj.step ?? step
   } catch (e: any) {
