@@ -217,6 +217,7 @@ done=true ТОЛЬКО когда поля problem, proposal и effect реал�
     sessionId: savedSessionId,
     collectedFields,
     done,
+    step,   // был вычислен, но не возвращался → прогресс в диалоге не обновлялся
     ...(isError ? { error: fullResponse } : {}),
   })
 }
