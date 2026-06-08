@@ -24,18 +24,19 @@ export const aiRouter = router({
     .input(z.object({ text: z.string() }))
     .query(async ({ ctx, input }) => {
       const term = input.text.trim()
+      // Prisma JSON path filters are unreliable on JSONB — use raw SQL for text search
+      const matchedIds = term
+        ? (await ctx.prisma.$queryRaw<{ id: string }[]>`
+            SELECT id FROM "Idea"
+            WHERE status IN ('list','expert','work','done')
+              AND "cardData"::text ILIKE ${`%${term}%`}
+            LIMIT 5
+          `).map((r) => r.id)
+        : null
       const ideas = await ctx.prisma.idea.findMany({
         where: {
           status: { in: ['list', 'expert', 'work', 'done'] },
-          ...(term
-            ? {
-                OR: [
-                  { cardData: { path: ['title'],    string_contains: term } },
-                  { cardData: { path: ['problem'],  string_contains: term } },
-                  { cardData: { path: ['proposal'], string_contains: term } },
-                ],
-              }
-            : {}),
+          ...(matchedIds !== null ? { id: { in: matchedIds } } : {}),
         },
         select: { id: true, cardData: true },
         take: 5,
