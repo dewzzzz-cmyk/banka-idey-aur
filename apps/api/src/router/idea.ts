@@ -68,16 +68,16 @@ export const ideaRouter = router({
         })
       }
 
-      // Search across cardData JSON fields (case-sensitive, Prisma JSON path filter)
+      // Search: Prisma JSON path filters are unreliable on JSONB in PostgreSQL,
+      // so we use a raw SQL query to get matching IDs, then filter by them.
       if (input.search?.trim()) {
-        const term = input.search.trim()
-        andClauses.push({
-          OR: [
-            { cardData: { path: ['title'],    string_contains: term } },
-            { cardData: { path: ['problem'],  string_contains: term } },
-            { cardData: { path: ['proposal'], string_contains: term } },
-          ],
-        })
+        const term = `%${input.search.trim()}%`
+        const matchingIds = await ctx.prisma.$queryRaw<{ id: string }[]>`
+          SELECT id FROM "Idea"
+          WHERE "cardData"::text ILIKE ${term}
+        `
+        // Always add id filter — empty array → no results (correct behaviour)
+        where.id = { in: matchingIds.map((r) => r.id) }
       }
 
       if (andClauses.length > 0) where.AND = andClauses
