@@ -27,7 +27,7 @@ export const aiRouter = router({
       // Prisma JSON path filters are unreliable on JSONB — use raw SQL for text search
       const matchedIds = term
         ? (await ctx.prisma.$queryRaw<{ id: string }[]>`
-            SELECT id FROM "Idea"
+            SELECT id FROM "ideas"
             WHERE status IN ('list','expert','work','done')
               AND "cardData"::text ILIKE ${`%${term}%`}
             LIMIT 5

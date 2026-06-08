@@ -73,10 +73,12 @@ export const ideaRouter = router({
       if (input.search?.trim()) {
         const term = `%${input.search.trim()}%`
         const matchingIds = await ctx.prisma.$queryRaw<{ id: string }[]>`
-          SELECT id FROM "Idea"
+          SELECT id FROM "ideas"
           WHERE "cardData"::text ILIKE ${term}
         `
         // Always add id filter — empty array → no results (correct behaviour)
+        // Guard: if nothing matched, return early — Prisma { in: [] } can be unreliable
+        if (matchingIds.length === 0) return { items: [], total: 0 }
         where.id = { in: matchingIds.map((r) => r.id) }
       }
 
