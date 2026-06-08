@@ -11,6 +11,7 @@ import { registerAuth } from './auth/strategy.js'
 import { registerWorkers } from './jobs/workers.js'
 import { prisma } from './db.js'
 import { streamChatHandler } from './ai/stream.js'
+import ExcelJS from 'exceljs'
 
 async function main() {
   const app = Fastify({
@@ -80,8 +81,6 @@ async function main() {
         assignedBy: { select: { name: true } },
       },
     })
-    const ExcelJSModule = await import('exceljs')
-    const ExcelJS = (ExcelJSModule as any).default ?? ExcelJSModule
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Реестр вознаграждений')
     ws.columns = [
@@ -148,8 +147,6 @@ async function main() {
       }),
     ])
 
-    const ExcelJSModule = await import('exceljs')
-    const ExcelJS = (ExcelJSModule as any).default ?? ExcelJSModule
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Банка Идей · АУР'
 
