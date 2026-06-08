@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { router, protectedProcedure } from '../trpc.js'
-import type { IdeaCardData } from '@portal/types'
+import type { IdeaCardData, IdeaStatus, IdeaCategory } from '@portal/types'
 import { MODERATED_STATUSES } from '@portal/types'
 import { enqueueNotification, enqueueReindex } from '../jobs/index.js'
 
@@ -63,8 +63,8 @@ export const ideaRouter = router({
       return {
         items: ideas.map((i) => ({
           id: i.id,
-          status: i.status,
-          category: i.category,
+          status: i.status as IdeaStatus,
+          category: i.category as IdeaCategory,
           cardData: i.cardData as unknown as IdeaCardData,
           isConfidential: i.isConfidential,
           isAnonymous: i.isAnonymous,

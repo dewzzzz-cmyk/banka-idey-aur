@@ -121,7 +121,7 @@ export default function Card() {
   // Populate from loaded idea
   useEffect(() => {
     if (ideaData) {
-      const cd = ideaData.cardData as any
+      const cd = (ideaData as any).cardData
       setF({
         title: cd.title ?? '',
         problem: cd.problem ?? '',
