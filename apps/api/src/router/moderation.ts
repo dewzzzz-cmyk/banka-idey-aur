@@ -101,6 +101,9 @@ export const moderationRouter = router({
   linkDuplicate: curatorProcedure
     .input(z.object({ ideaId: z.string(), originalIdeaId: z.string() }))
     .mutation(async ({ ctx, input }) => {
+      const existing = await ctx.prisma.idea.findUniqueOrThrow({
+        where: { id: input.ideaId },
+      })
       const updated = await ctx.prisma.idea.update({
         where: { id: input.ideaId },
         data: { status: 'duplicate' },
@@ -108,7 +111,7 @@ export const moderationRouter = router({
       await ctx.prisma.ideaStatusLog.create({
         data: {
           ideaId: input.ideaId,
-          fromStatus: updated.status,
+          fromStatus: existing.status,
           toStatus: 'duplicate',
           actorId: ctx.user.id,
           comment: `Дубликат идеи ${input.originalIdeaId}`,

@@ -48,7 +48,7 @@ export function AiEvalPanel({ evaluation, onRefresh, isLoading }: Props) {
                   <div className="ai-eval-bar-wrap">
                     <div
                       className="ai-eval-bar-fill"
-                      style={{ width: `${val * 10}%` }}
+                      style={{ width: `${Math.min(val * 10, 100)}%` }}
                     />
                   </div>
                   <span className="ai-eval-score">{val}/10</span>

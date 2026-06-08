@@ -38,6 +38,9 @@ export const aiRouter = router({
   requestEvaluation: curatorProcedure
     .input(z.object({ ideaId: z.string() }))
     .mutation(async ({ input }) => {
-      return evaluateIdea(input.ideaId)
+      evaluateIdea(input.ideaId).catch((e) =>
+        console.error('[AI eval] requestEvaluation failed for', input.ideaId, e?.message)
+      )
+      return { queued: true }
     }),
 })
