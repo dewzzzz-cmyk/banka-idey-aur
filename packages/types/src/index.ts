@@ -85,6 +85,7 @@ export interface Notification {
 }
 
 export interface AiCollectedFields {
+  title?: string
   problem?: string
   who?: string
   proposal?: string
