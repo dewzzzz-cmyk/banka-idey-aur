@@ -157,15 +157,23 @@ done=true ТОЛЬКО когда поля problem, proposal и effect реал�
     const obj = result.object
     fullResponse = obj.message
 
-    // Merge newly extracted fields with previous ones (don't overwrite existing with empty)
+    // Merge: keep the LONGER value between old and new — prevents AI placeholder text
+    // ("Требуется уточнение") from overwriting real user data already collected.
+    const bestField = (prev?: string, next?: string): string | undefined => {
+      const p = prev?.trim() ?? ''
+      const n = next?.trim() ?? ''
+      if (!n) return prev           // nothing new → keep old
+      if (!p) return next           // nothing old → take new
+      return n.length >= p.length ? next : prev  // longer wins
+    }
     collectedFields = {
-      title: obj.title || previousFields.title,
-      problem: obj.problem || previousFields.problem,
-      who: obj.who || previousFields.who,
-      proposal: obj.proposal || previousFields.proposal,
-      resources: obj.resources || previousFields.resources,
-      effect: obj.effect || previousFields.effect,
-      effectEstimate: obj.effectEstimate || previousFields.effectEstimate,
+      title:         bestField(previousFields.title,         obj.title),
+      problem:       bestField(previousFields.problem,       obj.problem),
+      who:           bestField(previousFields.who,           obj.who),
+      proposal:      bestField(previousFields.proposal,      obj.proposal),
+      resources:     bestField(previousFields.resources,     obj.resources),
+      effect:        bestField(previousFields.effect,        obj.effect),
+      effectEstimate:bestField(previousFields.effectEstimate,obj.effectEstimate),
     }
 
     // Safeguard: done=true only when all 3 required fields are actually populated in collectedFields
@@ -178,7 +186,8 @@ done=true ТОЛЬКО когда поля problem, proposal и effect реал�
       minLen(collectedFields.proposal) &&
       minLen(collectedFields.effect)
     done = (obj.done ?? false) && hasRequiredFields
-    step = obj.step ?? step
+    // Step can only advance, never regress (prevents model from resetting progress mid-dialog)
+    step = Math.max(step, obj.step ?? step)
   } catch (e: any) {
     console.error('[AI] Error:', e?.message)
     fullResponse = 'ИИ-помощник временно недоступен. Вы можете заполнить карточку вручную.'
