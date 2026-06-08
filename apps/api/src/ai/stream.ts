@@ -119,7 +119,12 @@ export async function streamChatHandler(req: FastifyRequest, reply: FastifyReply
 Ты собираешь идею через диалог. Задавай по ОДНОМУ уточняющему вопросу за раз.
 Порядок: сначала проблема → кто затронут → предложение → ресурсы → эффект.
 НЕ переходи к карточке пока не заполнены хотя бы problem, proposal и effect.
-Возвращай JSON согласно схеме. Поля заполняй по мере получения информации.`,
+
+ОБЯЗАТЕЛЬНО: В JSON-ответе заполняй поля (problem, proposal, effect и т.д.) по мере того,
+как получаешь информацию — даже черновым вариантом. Если пользователь упомянул проблему,
+запиши её в поле "problem", даже если будешь уточнять детали. Если упомянул предложение —
+запиши в "proposal". НЕ оставляй поля пустыми если информация уже есть в диалоге.
+done=true ТОЛЬКО когда поля problem, proposal и effect реально заполнены в JSON (не пустые).`,
   ]
     .filter(Boolean)
     .join('')
@@ -157,7 +162,15 @@ export async function streamChatHandler(req: FastifyRequest, reply: FastifyReply
       effectEstimate: obj.effectEstimate || previousFields.effectEstimate,
     }
 
-    done = obj.done ?? false
+    // Safeguard: done=true only when all 3 required fields are actually populated in collectedFields.
+    // DeepSeek sometimes sets done=true before populating the structured fields — this prevents
+    // an empty card from being shown to the user prematurely.
+    const hasRequiredFields = !!(
+      collectedFields.problem?.trim() &&
+      collectedFields.proposal?.trim() &&
+      collectedFields.effect?.trim()
+    )
+    done = (obj.done ?? false) && hasRequiredFields
     step = obj.step ?? step
   } catch (e: any) {
     console.error('[AI] Error:', e?.message)
