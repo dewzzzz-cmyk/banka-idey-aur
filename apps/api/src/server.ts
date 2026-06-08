@@ -80,7 +80,8 @@ async function main() {
         assignedBy: { select: { name: true } },
       },
     })
-    const ExcelJS = await import('exceljs')
+    const ExcelJSModule = await import('exceljs')
+    const ExcelJS = (ExcelJSModule as any).default ?? ExcelJSModule
     const wb = new ExcelJS.Workbook()
     const ws = wb.addWorksheet('Реестр вознаграждений')
     ws.columns = [
@@ -147,7 +148,8 @@ async function main() {
       }),
     ])
 
-    const ExcelJS = await import('exceljs')
+    const ExcelJSModule = await import('exceljs')
+    const ExcelJS = (ExcelJSModule as any).default ?? ExcelJSModule
     const wb = new ExcelJS.Workbook()
     wb.creator = 'Банка Идей · АУР'
 
