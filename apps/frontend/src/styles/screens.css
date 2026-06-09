@@ -277,6 +277,7 @@
 .qresolved { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 11px; font-weight: 700; color: var(--st-done-t); background: var(--st-done-b); padding: 3px 8px; border-radius: 99px; }
 
 .cur-detail { display: flex; flex-direction: column; gap: 14px; }
+.cur-back-btn { display: none; } /* hidden on desktop, shown via mobile override */
 .cur-card { padding: 24px 26px; }
 .cur-card-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
 .cur-inline-meta { display: flex; gap: 8px; margin-bottom: 11px; }
@@ -446,9 +447,15 @@
   .profile-points { align-self: stretch; justify-content: center; }
   .badges-grid { grid-template-columns: repeat(3,1fr); }
 
-  /* ---- CURATOR ---- */
+  /* ---- CURATOR (mobile master→detail) ---- */
   .cur-layout { grid-template-columns: 1fr; }
   .cur-queue { position: static; max-height: none; }
+  /* When detail is open on mobile — hide the queue, show only detail */
+  .cur-layout[data-detail="open"] .cur-queue { display: none; }
+  /* When detail is closed (queue view) — hide the detail panel */
+  .cur-layout[data-detail="closed"] .cur-detail { display: none; }
+  /* Back button: visible only on mobile */
+  .cur-back-btn { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
   .cur-head { flex-wrap: wrap; gap: 8px; }
   .cur-head-stats { flex-wrap: wrap; gap: 6px; }
   .cur-card { padding: 16px; }

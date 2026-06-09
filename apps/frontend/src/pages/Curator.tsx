@@ -41,6 +41,7 @@ export default function Curator() {
   ]
 
   const [selId, setSelId] = useState<string | undefined>()
+  const [detailOpen, setDetailOpen] = useState(false) // mobile: queue vs detail view
   const [modal, setModal] = useState<Modal>(null)
   const [reason, setReason] = useState('')
   const [assigneeId, setAssigneeId] = useState('')
@@ -116,7 +117,7 @@ export default function Curator() {
         </div>
       </div>
 
-      <div className="cur-layout">
+      <div className="cur-layout" data-detail={detailOpen ? 'open' : 'closed'}>
         {/* Queue */}
         <div className="cur-queue">
           {queue.length === 0 ? (
@@ -131,7 +132,7 @@ export default function Curator() {
                 <button
                   key={idea.id}
                   className={`queue-item ${(selIdReal ?? queue[0]?.id) === idea.id ? 'sel' : ''} ${resolved[idea.id] ? 'resolved' : ''}`}
-                  onClick={() => setSelId(idea.id)}
+                  onClick={() => { setSelId(idea.id); setDetailOpen(true) }}
                 >
                   <div className="queue-top">
                     <CatChip cat={idea.category} />
@@ -169,6 +170,11 @@ export default function Curator() {
         {/* Detail */}
         {sel && (
           <div className="cur-detail">
+            {/* Mobile back button */}
+            <button className="btn btn-ghost cur-back-btn" onClick={() => setDetailOpen(false)}>
+              <Icon name="arrowLeft" size={16} />
+              Назад к очереди
+            </button>
             <div className="card cur-card">
               <div className="cur-card-head">
                 <div>

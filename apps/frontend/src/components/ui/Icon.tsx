@@ -44,6 +44,7 @@ const ICONS: Record<string, () => React.ReactElement> = {
   plus: () => <S><L key={1} x1={12} y1={5} x2={12} y2={19} /><L key={2} x1={5} y1={12} x2={19} y2={12} /></S>,
   arrowUp: () => <S><P key={1} d="M12 19V5" /><P key={2} d="m5 12 7-7 7 7" /></S>,
   arrowRight: () => <S><L key={1} x1={5} y1={12} x2={19} y2={12} /><P key={2} d="m12 5 7 7-7 7" /></S>,
+  arrowLeft: () => <S><L key={1} x1={19} y1={12} x2={5} y2={12} /><P key={2} d="m12 5-7 7 7 7" /></S>,
   send: () => <S><P key={1} d="M22 2 11 13" /><P key={2} d="M22 2 15 22l-4-9-9-4 20-7Z" /></S>,
   check: () => <S d="M20 6 9 17l-5-5" />,
   checkCircle: () => <S><P key={1} d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><P key={2} d="m9 11 3 3L22 4" /></S>,
