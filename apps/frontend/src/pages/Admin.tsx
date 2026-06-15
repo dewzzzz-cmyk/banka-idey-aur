@@ -6,7 +6,7 @@ import { SectionH } from '@/components/ui/SectionH'
 import { Icon } from '@/components/ui/Icon'
 import type { IdeaCategory } from '@portal/types'
 
-type TabKey = 'dict' | 'prompt' | 'users' | 'registry'
+type TabKey = 'dict' | 'prompt' | 'users' | 'registry' | 'hr'
 
 // --- Directories tab ---
 function Directories() {
@@ -258,9 +258,19 @@ function UsersAdmin() {
   )
 }
 
+const STATUS_RU: Record<string, string> = {
+  pending: 'Ожидает',
+  approved: 'Одобрено',
+  paid: 'Выплачено',
+}
+
 // --- Registry tab ---
 function Registry() {
+  const utils = trpc.useUtils()
   const { data: registry } = trpc.admin.getRewardRegistry.useQuery()
+  const updateStatus = trpc.reward.updateStatus.useMutation({
+    onSuccess: () => utils.admin.getRewardRegistry.invalidate(),
+  })
 
   const handleExport = () => {
     window.location.href = '/api/export/rewards'
@@ -294,9 +304,10 @@ function Registry() {
             <span>Грейд</span>
             <span>Сумма</span>
             <span>Статус</span>
+            <span>Действие</span>
           </div>
           {(registry ?? []).map((r: any, i: number) => (
-            <div key={i} className="reg-row">
+            <div key={r.id ?? i} className="reg-row">
               <span className="reg-author">
                 <Avatar name={r.idea?.author?.name ?? '?'} size="sm" />
                 {r.idea?.author?.name ?? '—'}
@@ -309,7 +320,31 @@ function Registry() {
                 {r.amount ? r.amount.toLocaleString('ru') + ' ₽' : '—'}
               </span>
               <span className={`reg-st ${r.status === 'paid' ? 'paid' : r.status === 'approved' ? 'pay' : 'wait'}`}>
-                {r.status ?? '—'}
+                {STATUS_RU[r.status] ?? r.status ?? '—'}
+              </span>
+              <span>
+                {r.status === 'pending' && (
+                  <button
+                    className="btn btn-sm btn-primary"
+                    disabled={updateStatus.isPending}
+                    onClick={() => updateStatus.mutate({ id: r.id, status: 'approved' })}
+                  >
+                    Одобрить
+                  </button>
+                )}
+                {r.status === 'approved' && (
+                  <button
+                    className="btn btn-sm btn-ghost"
+                    disabled={updateStatus.isPending}
+                    onClick={() => updateStatus.mutate({ id: r.id, status: 'paid' })}
+                  >
+                    <Icon name="check" size={14} />
+                    Выплачено
+                  </button>
+                )}
+                {r.status === 'paid' && (
+                  <span style={{ fontSize: 13, color: 'var(--faint)' }}>—</span>
+                )}
               </span>
             </div>
           ))}
@@ -330,6 +365,119 @@ function Registry() {
   )
 }
 
+// --- HR engagement tab ---
+function HrDashboard() {
+  const { data: hr } = trpc.analytics.getHrStats.useQuery()
+
+  return (
+    <div className="admin-pane fade">
+      {/* Stat cards */}
+      <div className="kpi-grid" style={{ marginBottom: 20 }}>
+        <div className="kpi card">
+          <div className="kpi-val">{hr?.totalUsers ?? '—'}</div>
+          <div className="kpi-lbl">Сотрудников в системе</div>
+        </div>
+        <div className="kpi card">
+          <div className="kpi-val" style={{ color: 'var(--accent)' }}>{hr?.participationRate ?? '—'}%</div>
+          <div className="kpi-lbl">Вовлечённость</div>
+        </div>
+        <div className="kpi card">
+          <div className="kpi-val">{hr?.activeUsers ?? '—'}</div>
+          <div className="kpi-lbl">Хотя бы 1 идея</div>
+        </div>
+        <div className="kpi card">
+          <div className="kpi-val" style={{ color: 'var(--muted)' }}>{hr?.neverActive ?? '—'}</div>
+          <div className="kpi-lbl">Не подавали идей</div>
+        </div>
+      </div>
+
+      <div className="admin-2col">
+        {/* Department breakdown */}
+        <div className="card cur-card">
+          <div className="section-h" style={{ marginBottom: 16 }}>
+            <div><h2>Вовлечённость по подразделениям</h2></div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {(hr?.byDept ?? []).map((d) => (
+              <div key={d.dept}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600 }}>{d.dept}</span>
+                  <span style={{ color: 'var(--muted)' }}>
+                    {d.active}/{d.total} · {d.rate}% · {d.ideas} ид.
+                  </span>
+                </div>
+                <div style={{ height: 6, background: 'var(--bg-2)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${d.rate}%`,
+                    background: d.rate >= 60 ? 'var(--st-done-d)' : d.rate >= 30 ? 'var(--accent)' : '#e53935',
+                    borderRadius: 3,
+                    transition: 'width 0.4s',
+                  }} />
+                </div>
+              </div>
+            ))}
+            {(!hr?.byDept || hr.byDept.length === 0) && (
+              <div className="empty" style={{ padding: 16 }}><p>Нет данных</p></div>
+            )}
+          </div>
+        </div>
+
+        {/* Dormant info */}
+        <div className="card cur-card">
+          <div className="section-h" style={{ marginBottom: 16 }}>
+            <div>
+              <h2>Требуют внимания HR</h2>
+              <div className="muted" style={{ fontSize: 13, marginTop: 3 }}>
+                Не подавали идей более 90 дней
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: hr && hr.dormant > 0 ? '#fff3e0' : 'var(--bg-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Icon name="bell" size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>
+                  {hr?.dormant ?? '—'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
+                  активных ранее, заснувших
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 12, borderTop: '1px solid var(--line-2)' }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 14,
+                background: hr && hr.neverActive > 0 ? '#fce4ec' : 'var(--bg-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+              }}>
+                <Icon name="user" size={22} />
+              </div>
+              <div>
+                <div style={{ fontSize: 28, fontWeight: 700, lineHeight: 1 }}>
+                  {hr?.neverActive ?? '—'}
+                </div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
+                  ни разу не подавали идею
+                </div>
+              </div>
+            </div>
+            <div style={{ marginTop: 8, padding: '10px 14px', background: 'var(--bg-2)', borderRadius: 10, fontSize: 13, color: 'var(--ink-2)' }}>
+              Рекомендация: направьте письмо-напоминание или проведите встречу с этими сотрудниками.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // --- Main Admin screen ---
 export default function Admin() {
   const [tab, setTab] = useState<TabKey>('dict')
@@ -339,6 +487,7 @@ export default function Admin() {
     { k: 'prompt', label: 'Промт ИИ / Аудит', icon: 'sparkles' },
     { k: 'users', label: 'Пользователи', icon: 'users' },
     { k: 'registry', label: 'Реестр выплат', icon: 'download' },
+    { k: 'hr', label: 'HR вовлечённость', icon: 'bars' },
   ]
 
   return (
@@ -360,6 +509,7 @@ export default function Admin() {
       {tab === 'prompt' && <PromptAdmin />}
       {tab === 'users' && <UsersAdmin />}
       {tab === 'registry' && <Registry />}
+      {tab === 'hr' && <HrDashboard />}
     </div>
   )
 }

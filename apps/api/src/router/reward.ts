@@ -2,6 +2,20 @@ import { z } from 'zod'
 import { router, curatorProcedure } from '../trpc.js'
 
 export const rewardRouter = router({
+  updateStatus: curatorProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        status: z.enum(['pending', 'approved', 'paid']),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.prisma.rewardAssignment.update({
+        where: { id: input.id },
+        data: { status: input.status },
+      })
+    }),
+
   assignGrade: curatorProcedure
     .input(
       z.object({
