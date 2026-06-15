@@ -113,7 +113,7 @@ export function IdeaDrawer() {
         background: 'var(--surface)',
         zIndex: 201,
         overflowY: 'auto',
-        padding: 24,
+        padding: '24px 24px max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px))',
         boxShadow: '-2px 0 24px rgba(0,0,0,0.12)',
       }}>
         {/* Close button — 44×44px touch target */}

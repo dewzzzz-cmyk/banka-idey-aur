@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Rail } from './Rail'
 import { TopBar } from './TopBar'
@@ -9,6 +9,7 @@ import { useUIStore } from '@/stores/ui'
 export function AppShell() {
   const { accent, radius, theme, notifOpen, setNotifOpen } = useUIStore()
   const [navOpen, setNavOpen] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     document.documentElement.style.setProperty('--accent', accent)
@@ -19,7 +20,7 @@ export function AppShell() {
   // Close nav on route change (mobile)
   useEffect(() => {
     setNavOpen(false)
-  }, [])
+  }, [location.pathname])
 
   return (
     <div className="app">

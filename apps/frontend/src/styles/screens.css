@@ -402,9 +402,9 @@
   .chat-layout.has-side { grid-template-columns: 1fr; }
   .chat-side { position: static; margin-top: 14px; }
 
-  /* Full-height chat column using dynamic viewport */
+  /* Full-height chat column — account for iOS/Android system nav bar */
   .chat-col {
-    height: calc(100dvh - 150px);
+    height: calc(100dvh - 150px - env(safe-area-inset-bottom, 0px));
     min-height: 340px;
   }
   .chat-scroll { padding: 14px 14px 6px; }
@@ -474,7 +474,7 @@
 
   /* ---- MODALS / DRAWERS ---- */
   .modal { width: 100%; max-width: calc(100vw - 32px); padding: 20px; }
-  .drawer { width: 100%; max-width: 100%; padding: 20px 18px 32px; }
+  .drawer { width: 100%; max-width: 100%; padding: 20px 18px max(32px, calc(env(safe-area-inset-bottom, 0px) + 16px)); }
 
   /* ---- STATS ---- */
   .stat .sn { font-size: 24px; }

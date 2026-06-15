@@ -182,7 +182,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
               position: 'absolute', right: 0, top: 'calc(100% + 8px)',
               background: 'var(--surface)', border: '1px solid var(--line-2)',
               borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-              minWidth: 210, zIndex: 200, padding: '6px 0',
+              minWidth: 210, maxWidth: 'calc(100vw - 16px)', zIndex: 200, padding: '6px 0',
             }}>
               {/* User info */}
               <div style={{ padding: '10px 16px 8px', borderBottom: '1px solid var(--line-2)' }}>
