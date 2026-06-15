@@ -277,7 +277,9 @@
 .qresolved { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; font-size: 11px; font-weight: 700; color: var(--st-done-t); background: var(--st-done-b); padding: 3px 8px; border-radius: 99px; }
 
 .cur-detail { display: flex; flex-direction: column; gap: 14px; }
-.cur-back-btn { display: none; } /* hidden on desktop, shown via mobile override */
+.cur-back-btn { display: none; }      /* shown via mobile override */
+.topbar-search-btn { display: none; } /* shown via mobile override */
+.topbar-search-mobile { display: none; } /* mobile only */
 .cur-card { padding: 24px 26px; }
 .cur-card-head { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px; }
 .cur-inline-meta { display: flex; gap: 8px; margin-bottom: 11px; }
@@ -381,6 +383,15 @@
   .idea-meta-row { gap: 10px; padding: 9px 11px; }
   .idea-foot { gap: 8px; flex-wrap: wrap; }
   .idea-stats { gap: 10px; }
+
+  /* ---- TOPBAR MOBILE SEARCH ---- */
+  .topbar-search-btn { display: flex !important; } /* show search icon on mobile */
+  .topbar-title--hidden { display: none; }
+  .topbar-search-mobile {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--surface); padding: 0 16px; z-index: 10;
+  }
 
   /* ---- CHAT ---- */
   .chat-head { gap: 10px; margin-bottom: 14px; }

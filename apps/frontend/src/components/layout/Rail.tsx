@@ -76,30 +76,38 @@ export function Rail({ isOpen, onClose }: RailProps) {
         </NavLink>
       ))}
 
-      <div className="nav-group-label">Кураторам</div>
-      {NAV_CUR.map((n) => (
-        <NavLink
-          key={n.to}
-          to={n.to}
-          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-        >
-          <Icon name={n.icon} size={19} />
-          {n.label}
-          {n.count && <span className="count">{n.count}</span>}
-        </NavLink>
-      ))}
+      {user?.roles?.some((r) => ['curator', 'admin', 'owner', 'committee', 'implementer'].includes(r)) && (
+        <>
+          <div className="nav-group-label">Кураторам</div>
+          {NAV_CUR.map((n) => (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+            >
+              <Icon name={n.icon} size={19} />
+              {n.label}
+              {n.count && <span className="count">{n.count}</span>}
+            </NavLink>
+          ))}
+        </>
+      )}
 
-      <div className="nav-group-label">Управление</div>
-      {NAV_ADMIN.map((n) => (
-        <NavLink
-          key={n.to}
-          to={n.to}
-          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-        >
-          <Icon name={n.icon} size={19} />
-          {n.label}
-        </NavLink>
-      ))}
+      {user?.roles?.some((r) => ['admin', 'owner'].includes(r)) && (
+        <>
+          <div className="nav-group-label">Управление</div>
+          {NAV_ADMIN.map((n) => (
+            <NavLink
+              key={n.to}
+              to={n.to}
+              className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
+            >
+              <Icon name={n.icon} size={19} />
+              {n.label}
+            </NavLink>
+          ))}
+        </>
+      )}
 
       <div className="co">
         <div className="colog" style={{ background: 'var(--accent)', borderRadius: 8, width: 30, height: 30, display: 'grid', placeItems: 'center' }}>

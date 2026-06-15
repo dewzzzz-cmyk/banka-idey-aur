@@ -41,6 +41,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
   }, [])
 
   const [q, setQ] = useState('')
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const debRef = useRef<ReturnType<typeof setTimeout>>()
 
   useEffect(() => {
@@ -81,7 +82,27 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
         <Icon name="menu" size={20} />
       </button>
 
-      <div className="topbar-title">
+      {/* Mobile search overlay — shown when mobileSearchOpen */}
+      {mobileSearchOpen && (
+        <div className="topbar-search-mobile">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--faint)', flexShrink: 0 }}>
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            autoFocus
+            placeholder="Поиск по идеям…"
+            value={q}
+            onChange={e => handleSearch(e.target.value)}
+            onBlur={() => { if (!q) setMobileSearchOpen(false) }}
+            style={{ border: 'none', outline: 'none', background: 'none', fontSize: 14, color: 'var(--ink)', width: '100%', minWidth: 0 }}
+          />
+          <button onClick={() => { setMobileSearchOpen(false); handleSearch('') }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4 }}>
+            <Icon name="x" size={16} />
+          </button>
+        </div>
+      )}
+
+      <div className={`topbar-title${mobileSearchOpen ? ' topbar-title--hidden' : ''}`}>
         <div className="pgtitle">{title.t}</div>
         <div className="pgsub">{title.s}</div>
       </div>
@@ -92,6 +113,11 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
         </svg>
         <input placeholder="Поиск по идеям…" value={q} onChange={e => handleSearch(e.target.value)} style={{ border: 'none', outline: 'none', background: 'none', fontSize: 13, color: 'var(--ink)', width: '100%', minWidth: 0 }} />
       </div>
+
+      {/* Mobile search button — hidden on desktop */}
+      <button className="iconbtn topbar-search-btn" onClick={() => setMobileSearchOpen(true)} aria-label="Поиск">
+        <Icon name="search" size={19} />
+      </button>
 
       <button
         className="iconbtn"

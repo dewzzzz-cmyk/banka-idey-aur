@@ -25,6 +25,7 @@
   --faint:     #98A1B2;
   --line:      #E7EBF2;
   --line-2:    #DEE3EC;
+  --border:    #E7EBF2;  /* alias for --line, used in IdeaDrawer */
 
   /* ---- status colors (text / bg / dot) ---- */
   --st-draft-t:   #64707F;  --st-draft-b:   #EEF1F5;  --st-draft-d:   #97A2B0;
@@ -432,6 +433,7 @@ hr.sep { border: none; border-top: 1px solid var(--line); margin: 0; }
   --faint: #505A6E;
   --line: #2A3048;
   --line-2: #333C56;
+  --border: #2A3048;
   --accent: #4D7BFF;
   --accent-soft: color-mix(in srgb, #4D7BFF 15%, #1E2230);
   --accent-soft-2: color-mix(in srgb, #4D7BFF 25%, #1E2230);

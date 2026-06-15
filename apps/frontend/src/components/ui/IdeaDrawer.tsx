@@ -116,10 +116,11 @@ export function IdeaDrawer() {
         padding: 24,
         boxShadow: '-2px 0 24px rgba(0,0,0,0.12)',
       }}>
-        {/* Close button */}
+        {/* Close button — 44×44px touch target */}
         <button
           onClick={() => setDetailIdea(null)}
-          style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 20 }}
+          style={{ position: 'absolute', top: 8, right: 8, width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 20, borderRadius: 8 }}
+          aria-label="Закрыть"
         >
           ✕
         </button>
