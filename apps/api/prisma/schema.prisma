@@ -217,6 +217,7 @@ model Notification {
   icon      String   @default("bell")
   isRead    Boolean  @default(false)
   accent    Boolean  @default(false)
+  refIdeaId String?
   createdAt DateTime @default(now())
 
   @@index([userId, isRead])

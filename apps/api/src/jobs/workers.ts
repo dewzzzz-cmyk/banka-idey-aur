@@ -5,8 +5,8 @@ export async function registerWorkers() {
   const boss = await getBoss()
 
   await boss.work('send-notification', async (job) => {
-    const { userId, text, icon = 'bell', accent = false } = (job as any).data ?? job
-    await prisma.notification.create({ data: { userId, text, icon, accent } })
+    const { userId, text, icon = 'bell', accent = false, refIdeaId } = (job as any).data ?? job
+    await prisma.notification.create({ data: { userId, text, icon, accent, refIdeaId } })
   })
 
   await boss.schedule('check-sla-deadline', '*/5 * * * *', {})
@@ -23,6 +23,7 @@ export async function registerWorkers() {
           text: `Идея "${title}" ожидает рассмотрения дольше установленного срока`,
           icon: 'alert',
           accent: true,
+          refIdeaId: timer.ideaId,
         },
       })
       await prisma.slaTimer.update({

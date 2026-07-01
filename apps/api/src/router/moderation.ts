@@ -51,6 +51,7 @@ export const moderationRouter = router({
         text: `Статус вашей идеи «${(idea.cardData as any).title ?? 'без названия'}» изменён`,
         icon: ['work', 'done'].includes(input.status) ? 'checkCircle' : 'bell',
         accent: ['work', 'done'].includes(input.status),
+        refIdeaId: input.ideaId,
       })
       if (MODERATED_STATUSES.includes(input.status as any)) {
         await enqueueReindex(input.ideaId)

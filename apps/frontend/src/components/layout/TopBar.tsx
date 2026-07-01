@@ -25,7 +25,7 @@ interface TopBarProps {
 export function TopBar({ onMenuToggle }: TopBarProps) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { notifOpen, setNotifOpen, theme, setTheme } = useUIStore()
+  const { notifOpen, setNotifOpen, theme, setTheme, setDetailIdea } = useUIStore()
   const { user, logout } = useAuthStore()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
@@ -60,6 +60,7 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
   const pathKey = '/' + location.pathname.split('/')[1]
   const title = TITLES[pathKey] ?? TITLES['/']
 
+  const utils = trpc.useUtils()
   const { data: notifData } = trpc.notification.getUnreadCount.useQuery(undefined, {
     refetchInterval: 30_000,
   })
@@ -67,8 +68,45 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
     undefined,
     { enabled: notifOpen }
   )
+  const markRead = trpc.notification.markRead.useMutation({
+    onSuccess: () => {
+      utils.notification.getUnreadCount.invalidate()
+      utils.notification.listMy.invalidate()
+    },
+  })
 
   const unread = notifData?.count ?? 0
+
+  const handleNotifClick = async (n: { id: string; refIdeaId?: string | null }) => {
+    markRead.mutate({ id: n.id })
+    setNotifOpen(false)
+    if (!n.refIdeaId) return
+    try {
+      const idea: any = await utils.client.idea.getById.query({ id: n.refIdeaId })
+      setDetailIdea({
+        id: idea.id,
+        status: idea.status as any,
+        category: idea.category as any,
+        cardData: idea.cardData as any,
+        isConfidential: idea.isConfidential,
+        isAnonymous: idea.isAnonymous,
+        authorId: idea.authorId,
+        authorName: idea.author?.name ?? '',
+        authorDept: idea.author?.dept ?? '',
+        votes: idea._count.votes,
+        votedByMe: idea.votedByMe,
+        comments: idea._count.comments,
+        views: idea.viewCount,
+        createdAt: idea.createdAt as any,
+        assigneeName: idea.implementation?.assignee?.name,
+        dueDate: idea.implementation?.dueDate as any,
+        effectFact: idea.implementation?.effectFact ?? undefined,
+        aiEvaluation: idea.aiEvaluation ?? undefined,
+      })
+    } catch {
+      // Idea may have been deleted or is no longer accessible — nothing to open.
+    }
+  }
 
   return (
     <header className="topbar">
@@ -155,7 +193,11 @@ export function TopBar({ onMenuToggle }: TopBarProps) {
               </div>
             )}
             {notifList.map((n, i) => (
-              <div key={n.id ?? i} className={`notif-row ${n.accent ? 'accent' : ''}`}>
+              <div
+                key={n.id ?? i}
+                className={`notif-row ${n.accent ? 'accent' : ''}`}
+                onClick={() => handleNotifClick(n)}
+              >
                 <div className="notif-ic"><Icon name={n.icon} size={17} /></div>
                 <div>
                   <div className="notif-txt">{n.text}</div>

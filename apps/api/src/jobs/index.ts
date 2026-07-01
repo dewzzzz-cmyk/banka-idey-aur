@@ -15,6 +15,7 @@ export async function enqueueNotification(data: {
   text: string
   icon?: string
   accent?: boolean
+  refIdeaId?: string
 }) {
   const b = await getBoss()
   await b.send('send-notification', data)
