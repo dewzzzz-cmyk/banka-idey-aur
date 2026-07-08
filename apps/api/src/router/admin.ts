@@ -1,8 +1,20 @@
 import { z } from 'zod'
 import { router, adminProcedure, protectedProcedure, curatorProcedure } from '../trpc.js'
 import { CAT_LABELS } from '@portal/types'
+import { getDeepseekKeyStatus, setDeepseekApiKey } from '../ai/config.js'
 
 export const adminRouter = router({
+  getAiKeyStatus: adminProcedure.query(async () => {
+    return getDeepseekKeyStatus()
+  }),
+
+  setAiKey: adminProcedure
+    .input(z.object({ apiKey: z.string().trim().min(10) }))
+    .mutation(async ({ input }) => {
+      await setDeepseekApiKey(input.apiKey)
+      return getDeepseekKeyStatus()
+    }),
+
   updatePrompt: adminProcedure
     .input(z.object({ body: z.string().min(10) }))
     .mutation(async ({ ctx, input }) => {

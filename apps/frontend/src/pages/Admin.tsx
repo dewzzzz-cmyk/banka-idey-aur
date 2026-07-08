@@ -87,6 +87,66 @@ function Directories() {
   )
 }
 
+// --- DeepSeek API key card ---
+function AiKeyCard() {
+  const utils = trpc.useUtils()
+  const { data: status } = trpc.admin.getAiKeyStatus.useQuery()
+  const setAiKey = trpc.admin.setAiKey.useMutation({
+    onSuccess: () => {
+      utils.admin.getAiKeyStatus.invalidate()
+      setApiKey('')
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    },
+  })
+
+  const [apiKey, setApiKey] = useState('')
+  const [saved, setSaved] = useState(false)
+
+  return (
+    <div className="card cur-card">
+      <SectionH title="ИИ-провайдер · ключ DeepSeek" />
+      <p style={{ fontSize: 13, color: 'var(--muted)', margin: '0 0 14px' }}>
+        Ключ хранится в базе и действует сразу для всех — вставьте его один раз здесь,
+        доступ к Railway не нужен. Без ключа портал использует локальную модель Ollama.
+      </p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+        <span style={{ fontSize: 13, color: 'var(--ink-2)' }}>Статус:</span>
+        {status?.isSet ? (
+          <span className="badge b-done">
+            <span className="bdot" />
+            установлен ({status.masked})
+          </span>
+        ) : (
+          <span className="badge b-draft">
+            <span className="bdot" />
+            не установлен
+          </span>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 10 }}>
+        <input
+          type="password"
+          className="prompt-area"
+          style={{ minHeight: 'unset', height: 40, padding: '0 14px', flex: 1 }}
+          placeholder="sk-..."
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          autoComplete="off"
+        />
+        <button
+          className="btn btn-primary"
+          disabled={apiKey.trim().length < 10 || setAiKey.isPending}
+          onClick={() => setAiKey.mutate({ apiKey: apiKey.trim() })}
+        >
+          <Icon name="check" size={17} />
+          {saved ? 'Сохранено!' : 'Сохранить'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // --- Prompt admin tab ---
 function PromptAdmin() {
   const { data: prompt } = trpc.admin.getPrompt.useQuery()
@@ -201,6 +261,8 @@ function PromptAdmin() {
           </div>
         </div>
       </div>
+
+      <AiKeyCard />
     </div>
   )
 }

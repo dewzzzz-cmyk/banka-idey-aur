@@ -2,13 +2,15 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { prisma } from '../db.js'
+import { getDeepseekApiKey } from './config.js'
 import type { AiEvaluation } from '@portal/types'
 
-function getAIClient() {
-  if (process.env.DEEPSEEK_API_KEY) {
+async function getAIClient() {
+  const deepseekKey = await getDeepseekApiKey()
+  if (deepseekKey) {
     return createOpenAI({
       baseURL: 'https://api.deepseek.com/v1',
-      apiKey: process.env.DEEPSEEK_API_KEY,
+      apiKey: deepseekKey,
     })
   }
   return createOpenAI({
@@ -17,8 +19,9 @@ function getAIClient() {
   })
 }
 
-function getModelName() {
-  if (process.env.DEEPSEEK_API_KEY) {
+async function getModelName() {
+  const deepseekKey = await getDeepseekApiKey()
+  if (deepseekKey) {
     return process.env.DEEPSEEK_MODEL ?? 'deepseek-chat'
   }
   return process.env.OLLAMA_MODEL ?? 'qwen2.5:7b'
@@ -82,8 +85,8 @@ export async function evaluateIdea(ideaId: string): Promise<AiEvaluation> {
     .filter(Boolean)
     .join('\n')
 
-  const aiClient = getAIClient()
-  const model = getModelName()
+  const aiClient = await getAIClient()
+  const model = await getModelName()
 
   const result = await generateObject({
     model: aiClient(model),

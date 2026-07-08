@@ -223,6 +223,12 @@ model Notification {
   @@index([userId, isRead])
 }
 
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model Session {
   sid    String   @id
   sess   Json

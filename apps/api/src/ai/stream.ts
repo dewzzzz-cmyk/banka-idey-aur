@@ -4,13 +4,15 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { prisma } from '../db.js'
 import { getActivePrompt } from './prompt.js'
+import { getDeepseekApiKey } from './config.js'
 import type { AiCollectedFields, AiMessage } from '@portal/types'
 
-function getAIClient() {
-  if (process.env.DEEPSEEK_API_KEY) {
+async function getAIClient() {
+  const deepseekKey = await getDeepseekApiKey()
+  if (deepseekKey) {
     return createOpenAI({
       baseURL: 'https://api.deepseek.com/v1',
-      apiKey: process.env.DEEPSEEK_API_KEY,
+      apiKey: deepseekKey,
     })
   }
   return createOpenAI({
@@ -19,8 +21,9 @@ function getAIClient() {
   })
 }
 
-function getModelName() {
-  if (process.env.DEEPSEEK_API_KEY) {
+async function getModelName() {
+  const deepseekKey = await getDeepseekApiKey()
+  if (deepseekKey) {
     return process.env.DEEPSEEK_MODEL ?? 'deepseek-chat'
   }
   return process.env.OLLAMA_MODEL ?? 'qwen2.5:7b'
@@ -141,9 +144,10 @@ done=true ТОЛЬКО когда поля problem, proposal и effect реал�
   let step = session ? (session.currentStep ?? 0) : 0
 
   try {
-    const aiClient = getAIClient()
-    const model = getModelName()
-    const provider = process.env.DEEPSEEK_API_KEY ? 'deepseek' : 'ollama'
+    const deepseekKey = await getDeepseekApiKey()
+    const aiClient = await getAIClient()
+    const model = await getModelName()
+    const provider = deepseekKey ? 'deepseek' : 'ollama'
     console.log(`[AI] provider=${provider} model=${model}`)
 
     const result = await generateObject({
